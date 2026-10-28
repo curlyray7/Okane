@@ -81,8 +81,8 @@ export function parsePdfStatement(pages: PdfItem[][]): ParseResult {
   const fullDates = [...all.matchAll(/\b\d{2}\/(\d{2})\/(\d{4})\b/g)].map((m) => `${m[2]}-${m[1]}`).sort();
   const lastMonth = fullDates[fullDates.length - 1] ?? `${new Date().getFullYear()}-12`;
 
-  const lines: Omit<BankLine, "ref">[] = [];
-  let credits = 0;
+  const lines: BankLine[] = [];
+  const credits: BankLine[] = [];
   let cols: Column[] | null = null;
   let done = false;
   for (const items of pages) {
@@ -119,16 +119,12 @@ export function parsePdfStatement(pages: PdfItem[][]): ParseResult {
         .join(" ")
         .replace(/\s+/g, " ")
         .trim();
-      if (!debit) {
-        credits++;
-        continue;
-      }
-      lines.push({ date, amount: round2(Math.abs(value)), label });
+      (debit ? lines : credits).push({ date, amount: round2(Math.abs(value)), label, ref: "" });
     }
   }
-  if (lines.length === 0 && credits === 0)
-    return { lines: [], credits: 0, error: "Je n’ai trouvé aucune opération dans ce PDF. S’il s’agit d’un scan (image), il ne contient pas de texte lisible." };
-  return { lines: withRefs(lines.map((l) => ({ ...l, ref: "" }))), credits };
+  if (lines.length === 0 && credits.length === 0)
+    return { lines: [], credits: [], error: "Je n’ai trouvé aucune opération dans ce PDF. S’il s’agit d’un scan (image), il ne contient pas de texte lisible." };
+  return { lines: withRefs(lines), credits: withRefs(credits, true) };
 }
 
 /** « 08/09 » prend l’année d’une date complète de la même ligne (date de valeur), sinon celle du relevé. */

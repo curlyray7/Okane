@@ -1,24 +1,29 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { AppData } from "@/lib/types";
+import { SAVINGS, type AppData } from "@/lib/types";
 import { colorFor, envelopeCats } from "@/lib/calc";
 import { dayLabel, eur, isoDate, uid } from "@/lib/format";
 import { updateData } from "@/lib/store";
-import { BankLine, IGNORE, Reason, alreadyImported, keywordFor, learnRule, placesIn, prettyLabel, readStatement, suggest } from "@/lib/bankImport";
+import { BankLine, CreditReason, IGNORE, Reason, alreadyImported, keywordFor, learnRule, placesIn, prettyLabel, readStatement, suggest, suggestCredit } from "@/lib/bankImport";
 import { Alert, Button, useToast } from "./ui";
 import { MascotSays } from "./Mascot";
 
 interface Row extends BankLine {
+  /** Rentrée d’argent plutôt que dépense */
+  credit: boolean;
   target: string;
   suggested: string;
-  reason: Reason;
+  reason: Reason | CreditReason;
 }
 
-const REASON: Record<Reason, string> = {
+const REASON: Record<Reason | CreditReason, string> = {
   rule: "Règle apprise",
   fixed: "Charge fixe, déjà comptée",
   duplicate: "Déjà saisie à la main ?",
+  merchant: "Remboursement d’un commerçant connu",
+  transfer: "Virement depuis ton épargne",
+  income: "Revenu déjà prévu dans ton budget",
   none: "",
 };
 
@@ -26,7 +31,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
   const toast = useToast();
   const envs = envelopeCats(data);
   const [rows, setRows] = useState<Row[] | null>(null);
-  const [info, setInfo] = useState({ credits: 0, known: 0 });
+  const [known, setKnown] = useState(0);
   const [error, setError] = useState("");
   const [learn, setLearn] = useState(true);
   const [filter, setFilter] = useState<"all" | "todo">("all");
@@ -44,17 +49,22 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
     if (res.error) return setError(res.error);
     const known = alreadyImported(data);
     const today = isoDate();
-    const fresh = res.lines.filter((l) => !known.has(l.ref) && l.date <= today);
+    const isNew = (l: BankLine) => !known.has(l.ref) && l.date <= today;
+    const debits = res.lines.filter(isNew);
+    const credits = res.credits.filter(isNew);
     const taken = new Set<string>();
-    setInfo({ credits: res.credits, known: res.lines.length - fresh.length });
-    setRows(
-      fresh
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .map((l) => {
-          const s = suggest(data, l, taken);
-          return { ...l, target: s.target, suggested: s.target, reason: s.reason };
-        }),
-    );
+    setKnown(res.lines.length + res.credits.length - debits.length - credits.length);
+    const byDate = (a: BankLine, b: BankLine) => b.date.localeCompare(a.date);
+    setRows([
+      ...debits.sort(byDate).map((l) => {
+        const s = suggest(data, l, taken);
+        return { ...l, credit: false, target: s.target, suggested: s.target, reason: s.reason };
+      }),
+      ...credits.sort(byDate).map((l) => {
+        const s = suggestCredit(data, l);
+        return { ...l, credit: true, target: s.target, suggested: s.target, reason: s.reason };
+      }),
+    ]);
   };
 
   const counts = useMemo(() => {
@@ -62,7 +72,8 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
     return {
       toImport: r.filter((x) => x.target && x.target !== IGNORE).length,
       todo: r.filter((x) => !x.target).length,
-      total: r.filter((x) => x.target && x.target !== IGNORE).reduce((s, x) => s + x.amount, 0),
+      debits: r.filter((x) => !x.credit).length,
+      credits: r.filter((x) => x.credit).length,
     };
   }, [rows]);
 
@@ -82,27 +93,33 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
         } else {
           const key = r.date.slice(0, 7);
           const m = (d.months[key] ??= { expenses: [], savingsDone: 0, bonus: 0 });
-          m.expenses.push({ id: uid(), date: r.date, amount: r.amount, categoryId: r.target, label: prettyLabel(r.label), createdAt: Date.now(), importId: r.ref });
+          const base = { id: uid(), date: r.date, label: prettyLabel(r.label), createdAt: Date.now(), importId: r.ref };
+          const [kind, id] = r.target.split(":");
+          if (!r.credit) m.expenses.push({ ...base, amount: r.amount, categoryId: r.target });
+          // Remboursement : une dépense négative, l’argent revient dans l’enveloppe.
+          else if (kind === "refund") m.expenses.push({ ...base, amount: -r.amount, categoryId: id });
+          else (m.extras ??= []).push({ ...base, amount: r.amount, target: id });
           if (!firstMonth || key < firstMonth) firstMonth = key;
         }
         if (learn && r.target !== r.suggested && r.reason !== "duplicate") {
           // Un mot-clé court partagé par des lignes classées différemment (« UBER » : courses ou repas) devient plus précis,
           // tout comme une correction d’une règle existante, pour ne pas l’écraser.
           const short = keywordFor(r.label, places);
-          const clash = r.reason === "rule" || rows.some((o) => o.target && o.target !== r.target && keywordFor(o.label, places) === short);
-          learnRule(d.rules, clash ? keywordFor(r.label, places, true) : short, r.target, uid);
+          const clash = r.reason === "rule" || rows.some((o) => o.credit === r.credit && o.target && o.target !== r.target && keywordFor(o.label, places) === short);
+          learnRule(d.rules, clash ? keywordFor(r.label, places, true) : short, r.target, uid, r.credit);
         }
       }
       d.ignoredImports = d.ignoredImports.slice(-3000);
       if (firstMonth && firstMonth < d.startMonth) d.startMonth = firstMonth;
     });
     if (!ok) return setError("Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué.");
-    toast(counts.toImport > 0 ? `${counts.toImport} dépense${counts.toImport > 1 ? "s" : ""} importée${counts.toImport > 1 ? "s" : ""}. Sugoi !` : "Relevé traité");
+    toast(counts.toImport > 0 ? `${counts.toImport} ligne${counts.toImport > 1 ? "s" : ""} importée${counts.toImport > 1 ? "s" : ""}. Sugoi !` : "Relevé traité");
     onClose();
   };
 
   const shown = (rows ?? []).filter((r) => filter === "all" || !r.target);
   let lastDay = "";
+  let lastSection: boolean | null = null;
 
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/45 min-[600px]:items-center" role="dialog" aria-modal="true" aria-labelledby="import-title" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -143,19 +160,23 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
               <summary className="cursor-pointer font-semibold text-ink">Où trouver mon relevé ?</summary>
               <p className="mt-2">
                 Le plus simple : le relevé de compte mensuel en PDF, dans l’espace « Documents » ou « e-Relevés » de ta banque. Un export
-                CSV ou OFX des opérations marche aussi. Évite les convertisseurs en ligne : ils reçoivent tout ton relevé. Les revenus et
-                remboursements sont ignorés, seules les dépenses sont proposées.
+                CSV ou OFX des opérations marche aussi. Évite les convertisseurs en ligne : ils reçoivent tout ton relevé.
               </p>
             </details>
           </div>
         ) : (
           <>
             <div className="px-[18px]">
-              <p className="text-[0.93rem] text-ink-2">
-                {rows.length} nouvelle{rows.length > 1 ? "s" : ""} dépense{rows.length > 1 ? "s" : ""}
-                {info.known > 0 && ` · ${info.known} déjà traitée${info.known > 1 ? "s" : ""}`}
-                {info.credits > 0 && ` · ${info.credits} crédit${info.credits > 1 ? "s" : ""} ignoré${info.credits > 1 ? "s" : ""}`}
+              <p className="text-[0.93rem] font-semibold">
+                {counts.debits} dépense{counts.debits > 1 ? "s" : ""}
+                {counts.credits > 0 && ` et ${counts.credits} rentrée${counts.credits > 1 ? "s" : ""} d’argent`} à vérifier
               </p>
+              {known > 0 && (
+                <p className="mt-0.5 text-[0.82rem] text-ink-2">
+                  {known > 1 ? `${known} autres lignes étaient déjà` : "1 autre ligne était déjà"} dans un relevé importé avant, je ne{" "}
+                  {known > 1 ? "les" : "la"} reprends pas.
+                </p>
+              )}
               {rows.length > 0 && (
                 <div className="mt-3 flex gap-2" role="group" aria-label="Filtre">
                   {(
@@ -182,35 +203,74 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
               {rows.length === 0 && <p className="py-8 text-center text-ink-2">Rien de nouveau dans ce relevé : tout est déjà importé.</p>}
               {shown.length === 0 && rows.length > 0 && <p className="py-8 text-center text-ink-2">Tout est classé. Sugoi !</p>}
               {shown.map((r) => {
+                const section = r.credit !== lastSection ? (lastSection = r.credit) : null;
+                if (section !== null) lastDay = "";
                 const head = r.date !== lastDay ? (lastDay = r.date) : null;
                 return (
                   <div key={r.ref}>
+                    {section !== null && (
+                      <div className="mt-3 mb-1 border-b-2 border-ink pb-1">
+                        <h3 className="font-manga text-xl">{r.credit ? "Rentrées d’argent" : "Dépenses"}</h3>
+                        {r.credit && (
+                          <p className="mt-0.5 text-[0.8rem] text-ink-2">
+                            Remboursement : l’argent revient dans l’enveloppe. En plus : il s’ajoute au budget d’une enveloppe ou à ton épargne.
+                            Salaire et virements entre tes comptes : ignore-les, ils sont déjà prévus.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {head && <h3 className="mt-2 mb-1.5 font-manga text-lg text-accent first-letter:uppercase">{dayLabel(head)}</h3>}
                     <div className={`mb-2 rounded-xl border-2 px-3 py-2.5 ${r.target ? "border-line" : "border-pop"}`}>
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="min-w-0 truncate" title={r.label}>
                           {prettyLabel(r.label)}
                         </span>
-                        <b className="font-display tabular whitespace-nowrap">{eur(r.amount)}</b>
+                        <b className={`font-display tabular whitespace-nowrap ${r.credit ? "text-save" : ""}`}>
+                          {r.credit ? "+" : ""}
+                          {eur(r.amount)}
+                        </b>
                       </div>
                       <div className="mt-2 flex items-center gap-2">
                         <i
                           className="inline-block h-2.5 w-2.5 flex-none rounded-[3px]"
-                          style={{ background: r.target && r.target !== IGNORE ? colorFor(data, r.target) : "transparent" }}
+                          style={{ background: dotColor(data, r) }}
                         />
                         <select
-                          aria-label={`Enveloppe pour ${r.label}`}
+                          aria-label={`${r.credit ? "Rentrée" : "Enveloppe"} pour ${r.label}`}
                           value={r.target}
                           onChange={(e) => setTarget(r.ref, e.target.value)}
                           className={`min-w-0 flex-1 rounded-[10px] border-2 bg-surface-2 px-2 py-1.5 text-[0.9rem] ${r.target ? "border-line" : "border-pop"} ${r.target === IGNORE ? "text-ink-2" : ""}`}
                         >
                           <option value="">À classer</option>
-                          {envs.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                          <option value={IGNORE}>Ignorer (charge fixe, virement…)</option>
+                          {r.credit ? (
+                            <>
+                              <optgroup label="Remboursement (l’argent revient dans)">
+                                {envs.map((c) => (
+                                  <option key={c.id} value={`refund:${c.id}`}>
+                                    Remboursement · {c.name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                              <optgroup label="Rentrée en plus (ajoutée à)">
+                                {envs.map((c) => (
+                                  <option key={c.id} value={`extra:${c.id}`}>
+                                    En plus · {c.name}
+                                  </option>
+                                ))}
+                                <option value={`extra:${SAVINGS}`}>En plus · Épargne</option>
+                              </optgroup>
+                              <option value={IGNORE}>Ignorer (salaire prévu, virement entre mes comptes…)</option>
+                            </>
+                          ) : (
+                            <>
+                              {envs.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))}
+                              <option value={IGNORE}>Ignorer (charge fixe, virement…)</option>
+                            </>
+                          )}
                         </select>
                       </div>
                       {r.reason !== "none" && r.target === r.suggested && <p className="mt-1 text-[0.78rem] text-ink-2">{REASON[r.reason]}</p>}
@@ -240,7 +300,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
                   Autre fichier
                 </Button>
                 <Button variant="accent" className="flex-1 py-3" onClick={confirm} disabled={rows.length === 0}>
-                  {counts.toImport > 0 ? `Importer ${eur(counts.total)}` : "Terminer"}
+                  {counts.toImport > 0 ? `Importer ${counts.toImport} ligne${counts.toImport > 1 ? "s" : ""}` : "Terminer"}
                 </Button>
               </div>
             </div>
@@ -251,3 +311,9 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
   );
 }
 
+function dotColor(data: AppData, r: Row) {
+  if (!r.target || r.target === IGNORE) return "transparent";
+  if (!r.credit) return colorFor(data, r.target);
+  const id = r.target.split(":")[1];
+  return id === SAVINGS ? "var(--save)" : colorFor(data, id);
+}

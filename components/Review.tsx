@@ -77,6 +77,7 @@ export function Review({ data, month }: { data: AppData; month: string }) {
 
         <Panel title={`Bilan de ${monthLabel(month)}`}>
           <Row label="Revenus prévus" value={eur(r.income)} />
+          {r.extra > 0 && <Row label="Rentrées en plus" value={`+ ${eur(r.extra)}`} />}
           <Row label="Charges fixes" value={`− ${eur(r.fixed)}`} />
           <Row label="Dépenses des enveloppes" note={`budget ${eur(r.envBudget)}`} value={`− ${eur(r.envSpent)}`} />
           <Row label="Épargne versée" note={`prévu ${eur(r.plannedSavings)}`} value={`− ${eur(r.saved)}`} />
@@ -101,8 +102,8 @@ export function Review({ data, month }: { data: AppData; month: string }) {
                 {c.name}
               </span>
               <span className="tabular">
-                <b className={`font-display ${s > c.budget ? "text-over" : ""}`}>{eur(s)}</b>
-                <span className="text-sm text-ink-2"> / {eur(c.budget)}</span>
+                <b className={`font-display ${s > r.budgets[c.id] ? "text-over" : ""}`}>{eur(s)}</b>
+                <span className="text-sm text-ink-2"> / {eur(r.budgets[c.id])}</span>
               </span>
             </div>
           );

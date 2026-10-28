@@ -25,6 +25,7 @@ export interface Expense {
   id: string;
   /** Date au format YYYY-MM-DD */
   date: string;
+  /** Négatif pour un remboursement : l'argent revient dans l'enveloppe */
   amount: number;
   categoryId: string;
   label: string;
@@ -33,19 +34,38 @@ export interface Expense {
   importId?: string;
 }
 
+/** Rentrée d'argent imprévue (virement d'un parent, prime…) ajoutée au budget d'une enveloppe ou à l'épargne */
+export interface Extra {
+  id: string;
+  date: string;
+  amount: number;
+  label: string;
+  /** Identifiant d'enveloppe, ou SAVINGS */
+  target: string;
+  createdAt: number;
+  importId?: string;
+}
+
+export const SAVINGS = "savings";
+
 export interface MonthData {
   expenses: Expense[];
   /** Montant d'épargne mensuelle confirmé comme versé (0 = pas encore) */
   savingsDone: number;
   /** Épargne bonus issue du non-dépensé */
   bonus: number;
+  extras?: Extra[];
 }
 
-/** Règle de classement des relevés : un mot-clé du libellé → une enveloppe, ou « ignore » */
+/**
+ * Règle de classement des relevés : un mot-clé du libellé → une enveloppe, ou « ignore ».
+ * Pour les rentrées (`on: "credit"`), la cible est « refund:<enveloppe> », « extra:<enveloppe> », « extra:savings » ou « ignore ».
+ */
 export interface ImportRule {
   id: string;
   pattern: string;
   target: string;
+  on?: "credit";
 }
 
 export interface AppData {

@@ -1,8 +1,8 @@
 "use client";
 
 import type { AppData } from "@/lib/types";
-import { colorFor, envelopeCats, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
-import { daysInMonth, eur, eur0, monthKey, monthLabel } from "@/lib/format";
+import { colorFor, envelopeBudgets, envelopeCats, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
+import { daysInMonth, eur, eur0, monthKey, monthLabel, round2 } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { AllocateAlert } from "./Onboarding";
 import { Bar, Button, Panel, useToast } from "./ui";
@@ -12,7 +12,9 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
   const envs = envelopeCats(data);
   const spent = spentByCategory(data, month);
-  const budget = sumBy(envs, (c) => c.budget);
+  // Budget du mois : budget prévu + rentrées en plus données à l’enveloppe.
+  const budgets = envelopeBudgets(data, month);
+  const budget = sumBy(envs, (c) => budgets[c.id]);
   const used = sumBy(envs, (c) => spent[c.id] ?? 0);
   const available = budget - used;
   const now = monthKey();
@@ -22,7 +24,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const m = getMonth(data, month);
   const rest = toAllocate(data);
   const goals = goalProgress(data);
-  const overCat = envs.find((c) => envelopeStatus(c, spent[c.id] ?? 0).level === "over");
+  const overCat = envs.find((c) => envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]).level === "over");
   const doneGoal = goals.find((g) => g.done);
   const [mood, line]: [Mood, string] =
     available < 0 || overCat
@@ -54,13 +56,14 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           </p>
           <div className="relative mt-5 mb-3 flex h-[30px] gap-1.5">
             {envs
-              .filter((c) => c.budget > 0 || (spent[c.id] ?? 0) > 0)
+              .filter((c) => budgets[c.id] > 0 || (spent[c.id] ?? 0) > 0)
               .map((c) => {
-                const s = spent[c.id] ?? 0;
-                const w = (Math.max(c.budget, s) / scale) * 100;
-                const f = c.budget > 0 ? Math.min(1, s / c.budget) * 100 : 100;
+                const s = Math.max(0, spent[c.id] ?? 0);
+                const b = budgets[c.id];
+                const w = (Math.max(b, s) / scale) * 100;
+                const f = b > 0 ? Math.min(1, s / b) * 100 : 100;
                 return (
-                  <div key={c.id} className="relative h-full min-w-[10px] overflow-hidden rounded-full" style={{ width: `${w}%`, color: colorFor(data, c.id) }} title={`${c.name} : ${eur(s)} sur ${eur(c.budget)}`}>
+                  <div key={c.id} className="relative h-full min-w-[10px] overflow-hidden rounded-full" style={{ width: `${w}%`, color: colorFor(data, c.id) }} title={`${c.name} : ${eur(s)} sur ${eur(b)}`}>
                     <div className="absolute inset-0 bg-current opacity-30" />
                     <div className="absolute inset-y-0 left-0 bg-current" style={{ width: `${f}%` }} />
                   </div>
@@ -70,7 +73,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           </div>
           <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[0.82rem] text-on-hero/80">
             {envs
-              .filter((c) => c.budget > 0)
+              .filter((c) => budgets[c.id] > 0)
               .map((c) => (
                 <span key={c.id} className="inline-flex items-center gap-1.5">
                   <i className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: colorFor(data, c.id) }} />
@@ -88,7 +91,8 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           {envs.length === 0 && <p className="text-ink-2">Aucune enveloppe. Crée-en une dans les réglages.</p>}
           {envs.map((c) => {
             const s = spent[c.id] ?? 0;
-            const st = envelopeStatus(c, s);
+            const st = envelopeStatus(c, s, budgets[c.id]);
+            const bonus = round2(budgets[c.id] - c.budget);
             const col = st.level === "over" ? "var(--over)" : st.level === "near" ? "var(--warn)" : colorFor(data, c.id);
             return (
               <div key={c.id} className="border-b border-line py-3 last:border-b-0">
@@ -106,7 +110,10 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                 </div>
                 <div className="mt-1 flex justify-between text-[0.82rem] text-ink-2">
                   <span>{eur(s)} dépensés</span>
-                  <span>sur {eur(c.budget)}</span>
+                  <span>
+                    sur {eur(budgets[c.id])}
+                    {bonus > 0 && <span className="text-save"> (dont +{eur(bonus)} en plus)</span>}
+                  </span>
                 </div>
               </div>
             );

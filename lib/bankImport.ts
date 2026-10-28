@@ -1,4 +1,4 @@
-import type { AppData, ImportRule } from "./types";
+import { SAVINGS, type AppData, type ImportRule } from "./types";
 import { round2 } from "./format";
 
 /** Une dépense lue dans un relevé (montant positif). */
@@ -11,8 +11,8 @@ export interface BankLine {
 
 export interface ParseResult {
   lines: BankLine[];
-  /** Nombre de crédits (revenus, remboursements) laissés de côté */
-  credits: number;
+  /** Rentrées d'argent (revenus, virements reçus, remboursements), montant positif */
+  credits: BankLine[];
   error?: string;
 }
 
@@ -26,7 +26,7 @@ export async function readStatement(file: File): Promise<ParseResult> {
     try {
       return parsePdfStatement(await extractPdfItems(buf));
     } catch {
-      return { lines: [], credits: 0, error: "Impossible de lire ce PDF. S’il est protégé par un mot de passe, exporte-le à nouveau sans protection." };
+      return { lines: [], credits: [], error: "Impossible de lire ce PDF. S’il est protégé par un mot de passe, exporte-le à nouveau sans protection." };
     }
   }
   let text: string;
@@ -41,7 +41,7 @@ export async function readStatement(file: File): Promise<ParseResult> {
 export function parseStatement(text: string): ParseResult {
   const t = text.replace(/^﻿/, "");
   const res = /<OFX>|<STMTTRN>/i.test(t) ? parseOfx(t) : parseCsv(t);
-  if (!res.error && res.lines.length === 0 && res.credits === 0) res.error = "Aucune opération trouvée dans ce fichier.";
+  if (!res.error && res.lines.length === 0 && res.credits.length === 0) res.error = "Aucune opération trouvée dans ce fichier.";
   return res;
 }
 
@@ -55,20 +55,16 @@ function ofxTag(block: string, tag: string) {
 function parseOfx(text: string): ParseResult {
   const blocks = text.split(/<STMTTRN>/i).slice(1);
   const lines: BankLine[] = [];
-  let credits = 0;
+  const credits: BankLine[] = [];
   for (const b of blocks) {
     const amount = parseBankAmount(ofxTag(b, "TRNAMT"));
     const d = ofxTag(b, "DTPOSTED");
-    if (amount === null || !/^\d{8}/.test(d)) continue;
-    if (amount >= 0) {
-      credits++;
-      continue;
-    }
+    if (!amount || !/^\d{8}/.test(d)) continue;
     const label = [ofxTag(b, "NAME"), ofxTag(b, "MEMO")].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
     const date = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-    lines.push({ date, amount: round2(-amount), label: decodeEntities(label), ref: ofxTag(b, "FITID") || "" });
+    (amount > 0 ? credits : lines).push({ date, amount: round2(Math.abs(amount)), label: decodeEntities(label), ref: ofxTag(b, "FITID") || "" });
   }
-  return { lines: withRefs(lines), credits };
+  return { lines: withRefs(lines), credits: withRefs(credits, true) };
 }
 
 function decodeEntities(s: string) {
@@ -116,7 +112,7 @@ function findColumn(headers: string[], wanted: string[], avoid: string[] = []) {
 
 function parseCsv(text: string): ParseResult {
   const rawLines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
-  if (rawLines.length === 0) return { lines: [], credits: 0, error: "Le fichier est vide." };
+  if (rawLines.length === 0) return { lines: [], credits: [], error: "Le fichier est vide." };
   const sample = rawLines.slice(0, 20).join("\n");
   const sep = [";", "\t", ","].reduce((best, s) => (sample.split(s).length > sample.split(best).length ? s : best), ";");
   const rows = rawLines.map((l) => splitCsvLine(l, sep));
@@ -139,12 +135,12 @@ function parseCsv(text: string): ParseResult {
   }
   if (headerIdx < 0) {
     const guessed = guessColumns(rows);
-    if (!guessed) return { lines: [], credits: 0, error: "Je n’ai pas reconnu les colonnes de ce relevé (date, libellé, montant)." };
+    if (!guessed) return { lines: [], credits: [], error: "Je n’ai pas reconnu les colonnes de ce relevé (date, libellé, montant)." };
     col = { ...guessed, debit: -1, credit: -1 };
   }
 
   const lines: BankLine[] = [];
-  let credits = 0;
+  const credits: BankLine[] = [];
   for (const r of rows.slice(headerIdx + 1)) {
     const date = parseBankDate(r[col.date] ?? "");
     if (!date) continue;
@@ -157,14 +153,10 @@ function parseCsv(text: string): ParseResult {
       else if (c) amount = Math.abs(c);
     }
     if (amount === null || amount === 0) continue;
-    if (amount > 0) {
-      credits++;
-      continue;
-    }
     const label = (col.label >= 0 ? r[col.label] : r.filter((_, i) => i !== col.date && i !== col.amount).sort((a, b) => b.length - a.length)[0]) ?? "";
-    lines.push({ date, amount: round2(-amount), label: label.replace(/\s+/g, " ").trim(), ref: "" });
+    (amount > 0 ? credits : lines).push({ date, amount: round2(Math.abs(amount)), label: label.replace(/\s+/g, " ").trim(), ref: "" });
   }
-  return { lines: withRefs(lines), credits };
+  return { lines: withRefs(lines), credits: withRefs(credits, true) };
 }
 
 /** Sans en-tête reconnu : la colonne la plus souvent datée, la plus souvent chiffrée, et le texte le plus long. */
@@ -211,12 +203,12 @@ export function parseBankAmount(v: string): number | null {
   return Number.isFinite(n) ? round2(n) : null;
 }
 
-/** Référence stable pour chaque ligne (FITID en OFX, sinon date + montant + libellé + rang). */
-export function withRefs(lines: BankLine[]) {
+/** Référence stable pour chaque ligne (FITID en OFX, sinon date + montant + libellé + rang ; « + » pour une rentrée). */
+export function withRefs(lines: BankLine[], credit = false) {
   const seen = new Map<string, number>();
   return lines.map((l) => {
     if (l.ref) return { ...l, ref: `ofx:${l.ref}` };
-    const base = `${l.date}|${l.amount}|${normalizeLabel(l.label)}`;
+    const base = `${l.date}|${credit ? "+" : ""}${l.amount}|${normalizeLabel(l.label)}`;
     const n = (seen.get(base) ?? 0) + 1;
     seen.set(base, n);
     return { ...l, ref: `csv:${hash(`${base}#${n}`)}` };
@@ -252,6 +244,9 @@ const GENERIC = new Set(
   "SARL SAS SASU EURL SNC STE CAFE BAR RESTAURANT RESTO BOULANGERIE PHARMACIE MAGASIN SUPER MARCHE STATION ESPACE SHOP BOUTIQUE GARAGE TABAC PRESSE SUMUP ZETTLE PAYPAL STRIPE SQUARE LYDIA PAYFIP WERO VERS DE LA LES DES AU AUX".split(" "),
 );
 
+/** Prépositions en tête de libellé (virements entre personnes). */
+const LEADING = new Set("DE DES LA LES AU AUX VERS POUR".split(" "));
+
 /**
  * Mot-clé retenu pour une nouvelle règle : le premier mot s’il est distinctif (« AUCHAN », « IKEA »),
  * sinon les deux premiers (« UBER EATS », « CAFE GOURMAND »).
@@ -259,8 +254,14 @@ const GENERIC = new Set(
  * Renvoie "" quand rien de fiable ne ressort (« P.E.S 33 BORDEAUX »).
  */
 export function keywordFor(label: string, places: Set<string> = new Set(), specific = false) {
-  const words = normalizeLabel(label).split(" ").filter((w) => w.length >= 2);
-  if (words.length === 0) return "";
+  let words = normalizeLabel(label).split(" ").filter((w) => w.length >= 2);
+  // « VIR de EL YOUNSI », « vers JEAN EUDES » : on saute la préposition et on garde deux mots (un prénom seul est trop vague).
+  const lead = words.findIndex((w) => !LEADING.has(w));
+  if (lead > 0) {
+    words = words.slice(lead);
+    specific = true;
+  }
+  if (words.length === 0 || lead < 0) return "";
   const [a, b] = words;
   const vague = GENERIC.has(a) || places.has(a);
   if (!b) return vague ? "" : a;
@@ -283,7 +284,9 @@ export function placesIn(labels: string[]) {
 
 /** Libellé lisible pour la liste des dépenses. */
 export function prettyLabel(label: string) {
-  const n = normalizeLabel(label);
+  const words = normalizeLabel(label).split(" ");
+  const lead = words.findIndex((w) => !LEADING.has(w));
+  const n = (lead > 0 ? words.slice(lead) : words).join(" ");
   const s = (n || label).toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
   return s.slice(0, 60);
 }
@@ -298,9 +301,7 @@ export interface Suggestion {
 export function suggest(d: AppData, line: BankLine, manualTaken: Set<string>): Suggestion {
   const label = normalizeLabel(line.label);
   const valid = (t: string) => t === IGNORE || d.categories.some((c) => c.id === t && c.kind === "envelope");
-  const rule = [...(d.rules ?? [])]
-    .sort((a, b) => b.pattern.length - a.pattern.length)
-    .find((r) => r.pattern && hasWords(label, r.pattern) && valid(r.target));
+  const rule = findRule(d, label, false, valid);
 
   const dup = findManualDuplicate(d, line, manualTaken);
   if (dup) {
@@ -313,6 +314,40 @@ export function suggest(d: AppData, line: BankLine, manualTaken: Set<string>): S
     return c.kind === "fixed" && n.length >= 3 && hasWords(label, n);
   });
   if (fixed) return { target: IGNORE, reason: "fixed" };
+  return { target: "", reason: "none" };
+}
+
+function findRule(d: AppData, label: string, credit: boolean, valid: (t: string) => boolean) {
+  return [...(d.rules ?? [])]
+    .filter((r) => (r.on === "credit") === credit)
+    .sort((a, b) => b.pattern.length - a.pattern.length)
+    .find((r) => r.pattern && hasWords(label, r.pattern) && valid(r.target));
+}
+
+export type CreditReason = "rule" | "merchant" | "transfer" | "income" | "none";
+
+const OWN_TRANSFER = /\b(LIVRET|LDDS?|LEP|PEL|CEL|EPARGNE|ASSURANCE VIE)\b/;
+const INCOME = /\b(SALAIRE|PAIE|CAF|POLE EMPLOI|FRANCE TRAVAIL|PENSION|RETRAITE|ALLOCATION|BOURSE)\b/;
+
+/**
+ * Proposition pour une rentrée d’argent : règle apprise ; virement depuis un compte d’épargne ou revenu déjà prévu → ignorer ;
+ * commerçant dont les dépenses vont dans une enveloppe (remboursement Uber Eats) → remboursement dans cette enveloppe ; sinon à classer.
+ */
+export function suggestCredit(d: AppData, line: BankLine): { target: string; reason: CreditReason } {
+  const label = normalizeLabel(line.label);
+  const env = (id: string) => d.categories.some((c) => c.id === id && c.kind === "envelope");
+  const validCredit = (t: string) => {
+    if (t === IGNORE || t === `extra:${SAVINGS}`) return true;
+    const [kind, id] = t.split(":");
+    return (kind === "refund" || kind === "extra") && env(id);
+  };
+  const rule = findRule(d, label, true, validCredit);
+  if (rule) return { target: rule.target, reason: "rule" };
+  if (OWN_TRANSFER.test(label)) return { target: IGNORE, reason: "transfer" };
+  const incomeNames = d.incomes.map((i) => normalizeLabel(i.name)).filter((n) => n.length >= 3);
+  if (INCOME.test(label) || incomeNames.some((n) => hasWords(label, n))) return { target: IGNORE, reason: "income" };
+  const merchant = findRule(d, label, false, env);
+  if (merchant) return { target: `refund:${merchant.target}`, reason: "merchant" };
   return { target: "", reason: "none" };
 }
 
@@ -330,14 +365,17 @@ function findManualDuplicate(d: AppData, line: BankLine, taken: Set<string>) {
 
 export function alreadyImported(d: AppData) {
   const refs = new Set(d.ignoredImports ?? []);
-  for (const m of Object.values(d.months)) for (const e of m.expenses) if (e.importId) refs.add(e.importId);
+  for (const m of Object.values(d.months)) {
+    for (const e of m.expenses) if (e.importId) refs.add(e.importId);
+    for (const x of m.extras ?? []) if (x.importId) refs.add(x.importId);
+  }
   return refs;
 }
 
-/** Ajoute ou met à jour une règle pour ce mot-clé. */
-export function learnRule(rules: ImportRule[], pattern: string, target: string, id: () => string) {
+/** Ajoute ou met à jour une règle pour ce mot-clé (règles des dépenses et des rentrées séparées). */
+export function learnRule(rules: ImportRule[], pattern: string, target: string, id: () => string, credit = false) {
   if (!pattern) return;
-  const existing = rules.find((r) => r.pattern === pattern);
+  const existing = rules.find((r) => r.pattern === pattern && (r.on === "credit") === credit);
   if (existing) existing.target = target;
-  else rules.push({ id: id(), pattern, target });
+  else rules.push(credit ? { id: id(), pattern, target, on: "credit" } : { id: id(), pattern, target });
 }

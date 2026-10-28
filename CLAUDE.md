@@ -19,13 +19,13 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
   - `Onboarding` : questionnaire en 6 étapes (revenus, charges fixes, enveloppes, épargne, objectifs, récap).
   - `Shell` : navigation par mois + 4 onglets (`#accueil`, `#depenses`, `#bilan`, `#reglages`), bouton + cyan.
   - `Home`, `Expenses`, `Review` (bilan + historique 6 mois), `Settings` (brouillon + bouton Enregistrer).
-  - `ExpenseSheet` : saisie montant + enveloppe + libellé ; la date est automatique.
+  - `ExpenseSheet` : saisie montant + enveloppe + libellé ; la date est automatique. Bascule « Dépense / Rentrée d’argent » : remboursement (revient dans une enveloppe) ou rentrée en plus (ajoutée à une enveloppe ou à l’épargne).
   - `ImportSheet` : import d’un relevé bancaire CSV/OFX (onglet Dépenses), revue ligne par ligne avant d’importer.
   - `editors.tsx` + `draft.ts` : édition des listes et validation, partagés par Onboarding et Settings.
   - `ui.tsx` : Button, Panel, Bar, Alert, MoneyInput, Toast.
   - `Mascot.tsx` : mascotte (`neutre` | `contente` | `inquiete` | `victoire` | `fierte`) lue dans `public/mascotte/<mood>.png` (480 px, originaux pleine taille dans `design/mascotte/`), visage SVG de secours si l’image manque. `MascotSays` = mascotte en médaillon rond + bulle. Sur l’accueil, l’humeur suit le budget (dépassement → inquiète, objectif atteint → victoire, épargne cochée → contente). `fierte` (drapeau israélien, kippa) apparaît au récap de l’onboarding quand chaque euro a sa mission, au bilan d’un mois terminé sans dépassement, et dans l’encart « Fait par… » des Réglages.
 - `lib/` :
-  - `types.ts` : `AppData` { incomes, categories (kind `fixed` | `envelope`), goals, savingsMonthly, margin, initialSavings, months[YYYY-MM], rules?, ignoredImports? }.
+  - `types.ts` : `AppData` { incomes, categories (kind `fixed` | `envelope`), goals, savingsMonthly, margin, initialSavings, months[YYYY-MM] { expenses, savingsDone, bonus, extras? }, rules?, ignoredImports? }.
   - `store.ts` : `useData` / `setData` / `updateData` via `useSyncExternalStore`.
   - `calc.ts` : tous les calculs (reste à répartir, dépensé par enveloppe, épargne totale, objectifs remplis par ordre de priorité, bilan).
   - `format.ts` : `eur`, `parseAmount` (accepte la virgule), helpers de mois.
@@ -37,7 +37,8 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
 - L'épargne du mois est confirmée par une case à cocher (`savingsDone` stocke le montant).
 - À partir du 25, le bilan propose de verser le non-dépensé des enveloppes en « épargne bonus » (`bonus`).
 - Supprimer une catégorie garde ses dépenses (affichées « Catégorie supprimée »).
-- Import de relevé (PDF, CSV ou OFX) : tout se passe dans le navigateur, rien n’est envoyé. Seuls les débits sont proposés (crédits ignorés). Proposition par ligne : doublon d’une saisie manuelle (même montant à 3 jours près) → ignorer ; règle apprise (`rules`, mot-clé du libellé → enveloppe ou `ignore`) ; libellé contenant le nom d’une charge fixe → ignorer ; sinon « À classer » (non importé). Chaque dépense importée garde `importId` ; les lignes ignorées vont dans `ignoredImports`, pour ne jamais reproposer une ligne déjà traitée. Les choix modifiés deviennent des règles, visibles et supprimables dans les Réglages.
+- Rentrées d’argent, deux sortes : **remboursement** = dépense de montant négatif dans l’enveloppe (le dépensé baisse) ; **rentrée en plus** = `months[k].extras` (cible : une enveloppe, dont le budget du mois augmente via `envelopeBudgets`, ou `SAVINGS`, compté dans `savedInMonth`). Toujours utiliser `envelopeBudgets(d, mois)` plutôt que `c.budget` pour le budget d’une enveloppe sur un mois. Le bilan ajoute une ligne « Rentrées en plus » au reste sur le compte courant.
+- Import de relevé (PDF, CSV ou OFX) : tout se passe dans le navigateur, rien n’est envoyé. Proposition par ligne de dépense : doublon d’une saisie manuelle (même montant à 3 jours près) → ignorer ; règle apprise (`rules`, mot-clé du libellé → enveloppe ou `ignore`) ; libellé contenant le nom d’une charge fixe → ignorer ; sinon « À classer » (non importé). Chaque dépense importée garde `importId` ; les lignes ignorées vont dans `ignoredImports`, pour ne jamais reproposer une ligne déjà traitée. Les choix modifiés deviennent des règles, visibles et supprimables dans les Réglages. Les rentrées d’argent du relevé ont leur propre section et leurs propres règles (`on: "credit"`, cible `refund:<id>` / `extra:<id>` / `extra:savings` / `ignore`) : virement depuis l’épargne (LIVRET, LDDS…) ou revenu prévu (SALAIRE, CAF, nom d’un revenu) → ignorer ; commerçant connu par une règle de dépense → remboursement dans la même enveloppe ; sinon à classer.
 
 ## Design (anime shōnen, effets dosés)
 - Violet électrique `--accent`, cyan `--pop` (bouton +, highlights), bloc héros `--hero` (violet nuit) avec `--on-hero`, noir `--ink`. Rouge `--over` réservé aux dépassements.

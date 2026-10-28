@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { AppData } from "@/lib/types";
-import { colorFor, envelopeCats, getMonth } from "@/lib/calc";
+import { SAVINGS, type AppData } from "@/lib/types";
+import { colorFor, envelopeBudgets, envelopeCats, getMonth, spentByCategory } from "@/lib/calc";
 import { daysInMonth, eur, isoDate, monthKey, parseAmount, round2, uid } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { Button, TextInput, useToast } from "./ui";
+
+/** Dépense, remboursement (l’argent revient dans une enveloppe) ou rentrée en plus (ajoutée à une enveloppe ou à l’épargne). */
+type Kind = "expense" | "refund" | "extra";
+
+const TITLES: Record<Kind, [string, string]> = {
+  expense: ["Nouvelle dépense", "Modifier la dépense"],
+  refund: ["Nouveau remboursement", "Modifier le remboursement"],
+  extra: ["Nouvelle rentrée", "Modifier la rentrée"],
+};
 
 function defaultDate(month: string) {
   const now = monthKey();
@@ -16,10 +25,14 @@ function defaultDate(month: string) {
 
 export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppData; month: string; expenseId?: string; onClose: () => void }) {
   const toast = useToast();
-  const existing = expenseId ? getMonth(data, month).expenses.find((e) => e.id === expenseId) : undefined;
+  const m0 = getMonth(data, month);
+  const existingExpense = expenseId ? m0.expenses.find((e) => e.id === expenseId) : undefined;
+  const existingExtra = expenseId ? m0.extras?.find((x) => x.id === expenseId) : undefined;
+  const existing = existingExpense ?? existingExtra;
   const envs = envelopeCats(data);
-  const [amount, setAmount] = useState(existing ? String(existing.amount).replace(".", ",") : "");
-  const [cat, setCat] = useState(existing?.categoryId ?? envs[0]?.id ?? "");
+  const [kind, setKind] = useState<Kind>(existingExtra ? "extra" : existingExpense && existingExpense.amount < 0 ? "refund" : "expense");
+  const [amount, setAmount] = useState(existing ? String(Math.abs(existing.amount)).replace(".", ",") : "");
+  const [cat, setCat] = useState(existingExtra?.target ?? existingExpense?.categoryId ?? envs[0]?.id ?? "");
   const [label, setLabel] = useState(existing?.label ?? "");
   const [error, setError] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
@@ -34,26 +47,37 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
     };
   }, [onClose]);
 
+  const pick = (k: Kind) => {
+    setKind(k);
+    if (k !== "extra" && cat === SAVINGS) setCat(envs[0]?.id ?? "");
+  };
+
   const save = () => {
     const a = parseAmount(amount);
     if (a === null || a <= 0) return setError("Indique un montant supérieur à 0.");
-    if (!cat) return setError("Choisis une enveloppe.");
+    if (!cat) return setError(kind === "extra" ? "Choisis où va cet argent." : "Choisis une enveloppe.");
     let left = 0;
     const ok = updateData((d) => {
-      const m = d.months[month] ?? { expenses: [], savingsDone: 0, bonus: 0 };
-      if (existing) {
-        const e = m.expenses.find((x) => x.id === existing.id);
-        if (e) Object.assign(e, { amount: a, categoryId: cat, label: label.trim() });
-      } else {
-        m.expenses.push({ id: uid(), date: defaultDate(month), amount: a, categoryId: cat, label: label.trim(), createdAt: Date.now() });
-      }
-      d.months[month] = m;
-      const c = d.categories.find((x) => x.id === cat);
-      left = round2((c?.budget ?? 0) - m.expenses.filter((x) => x.categoryId === cat).reduce((s, x) => s + x.amount, 0));
+      const m = (d.months[month] ??= { expenses: [], savingsDone: 0, bonus: 0 });
+      // Une modification peut changer de sorte : on retire l’ancienne ligne et on la recrée au bon endroit.
+      m.expenses = m.expenses.filter((x) => x.id !== existing?.id);
+      if (m.extras) m.extras = m.extras.filter((x) => x.id !== existing?.id);
+      const base = {
+        id: existing?.id ?? uid(),
+        date: existing?.date ?? defaultDate(month),
+        label: label.trim(),
+        createdAt: existing?.createdAt ?? Date.now(),
+        ...(existing?.importId ? { importId: existing.importId } : {}),
+      };
+      if (kind === "extra") (m.extras ??= []).push({ ...base, amount: a, target: cat });
+      else m.expenses.push({ ...base, amount: kind === "refund" ? -a : a, categoryId: cat });
+      if (cat !== SAVINGS) left = round2((envelopeBudgets(d, month)[cat] ?? 0) - (spentByCategory(d, month)[cat] ?? 0));
     });
     if (!ok) return setError("Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué.");
-    const name = envs.find((c) => c.id === cat)?.name ?? "";
-    toast(existing ? "Dépense modifiée" : left < 0 ? `${name} : dépassée de ${eur(-left)}` : `${name} : ${eur(left)} restants`);
+    const name = cat === SAVINGS ? "Épargne" : (envs.find((c) => c.id === cat)?.name ?? "");
+    if (existing) toast("Modification enregistrée");
+    else if (cat === SAVINGS) toast(`${eur(a)} ajoutés à ton épargne. Sugoi !`);
+    else toast(left < 0 ? `${name} : dépassée de ${eur(-left)}` : `${name} : ${eur(left)} restants`);
     onClose();
   };
 
@@ -61,11 +85,17 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
     if (!existing) return;
     updateData((d) => {
       const m = d.months[month];
-      if (m) m.expenses = m.expenses.filter((x) => x.id !== existing.id);
+      if (!m) return;
+      m.expenses = m.expenses.filter((x) => x.id !== existing.id);
+      if (m.extras) m.extras = m.extras.filter((x) => x.id !== existing.id);
     });
-    toast("Dépense supprimée");
+    toast("Supprimé");
     onClose();
   };
+
+  const income = kind !== "expense";
+  const chip = (active: boolean) =>
+    `inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.9rem] ${active ? "border-2 border-ink bg-accent text-on-accent shadow-ink-sm" : "border-2 border-line bg-surface-2"}`;
 
   return (
     <div
@@ -84,13 +114,33 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
         }}
       >
         <h2 id="sheet-title" className="font-manga text-[1.7rem] leading-none">
-          {existing ? "Modifier la dépense" : "Nouvelle dépense"}
+          {TITLES[kind][existing ? 1 : 0]}
         </h2>
         {envs.length === 0 ? (
           <p className="my-6 text-ink-2">Crée d’abord une enveloppe dans les réglages.</p>
         ) : (
           <>
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border-2 border-ink p-1" role="group" aria-label="Type">
+              {(
+                [
+                  [false, "Dépense"],
+                  [true, "Rentrée d’argent"],
+                ] as const
+              ).map(([isIncome, l]) => (
+                <button
+                  key={l}
+                  type="button"
+                  aria-pressed={income === isIncome}
+                  onClick={() => pick(isIncome ? (income ? kind : "refund") : "expense")}
+                  className={`rounded-lg py-2 text-[0.9rem] font-semibold ${income === isIncome ? (isIncome ? "bg-save text-on-accent" : "bg-accent text-on-accent") : "text-ink-2"}`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+
             <div className="my-3 flex items-baseline justify-center gap-1.5">
+              {income && <span className="font-manga text-5xl text-save">+</span>}
               <input
                 ref={amountRef}
                 aria-label="Montant"
@@ -99,24 +149,47 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
                 placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-[6ch] bg-transparent p-0 text-center font-manga text-6xl tabular outline-none placeholder:text-ink-2/50"
+                className={`w-[6ch] bg-transparent p-0 text-center font-manga text-6xl tabular outline-none placeholder:text-ink-2/50 ${income ? "text-save" : ""}`}
               />
               <span className="font-display text-3xl font-semibold text-ink-2">€</span>
             </div>
-            <p className="text-sm text-ink-2">Enveloppe</p>
-            <div className="mt-1 mb-4 flex flex-wrap gap-2" role="group" aria-label="Enveloppe">
+
+            {income && (
+              <div className="mb-4 grid gap-2" role="group" aria-label="Sorte de rentrée">
+                {(
+                  [
+                    ["refund", "Remboursement", "L’argent revient dans une enveloppe (Uber Eats, article renvoyé, un pote qui te rembourse)."],
+                    ["extra", "En plus", "Argent imprévu (virement d’un parent, prime) ajouté à une enveloppe ou à ton épargne."],
+                  ] as const
+                ).map(([k, l, hint]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    aria-pressed={kind === k}
+                    onClick={() => pick(k)}
+                    className={`rounded-xl border-2 px-3 py-2 text-left ${kind === k ? "border-ink bg-save-soft shadow-ink-sm" : "border-line"}`}
+                  >
+                    <b className="block text-[0.92rem]">{l}</b>
+                    <small className="block text-[0.78rem] text-ink-2">{hint}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p className="text-sm text-ink-2">{kind === "expense" ? "Enveloppe" : kind === "refund" ? "Revient dans" : "Ajoutée à"}</p>
+            <div className="mt-1 mb-4 flex flex-wrap gap-2" role="group" aria-label="Destination">
               {envs.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  aria-pressed={c.id === cat}
-                  onClick={() => setCat(c.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[0.9rem] ${c.id === cat ? "border-2 border-ink bg-accent text-on-accent shadow-ink-sm" : "border-2 border-line bg-surface-2"}`}
-                >
+                <button key={c.id} type="button" aria-pressed={c.id === cat} onClick={() => setCat(c.id)} className={chip(c.id === cat)}>
                   <i className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: colorFor(data, c.id) }} />
                   {c.name}
                 </button>
               ))}
+              {kind === "extra" && (
+                <button type="button" aria-pressed={cat === SAVINGS} onClick={() => setCat(SAVINGS)} className={chip(cat === SAVINGS)}>
+                  <i className="inline-block h-2.5 w-2.5 rounded-[3px] bg-save" />
+                  Épargne
+                </button>
+              )}
             </div>
             <TextInput aria-label="Libellé" placeholder="Libellé (facultatif)" maxLength={60} value={label} onChange={(e) => setLabel(e.target.value)} />
           </>
@@ -134,7 +207,10 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
             Annuler
           </Button>
           {envs.length > 0 && (
-            <button type="submit" className="flex-1 rounded-xl border-2 border-ink bg-accent py-3 font-semibold text-on-accent shadow-ink-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+            <button
+              type="submit"
+              className={`flex-1 rounded-xl border-2 border-ink py-3 font-semibold text-on-accent shadow-ink-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${income ? "bg-save" : "bg-accent"}`}
+            >
               {existing ? "Enregistrer" : "Ajouter"}
             </button>
           )}

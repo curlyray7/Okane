@@ -8,6 +8,7 @@ import { AllocateAlert } from "./Onboarding";
 import { GoalsEditor, RowsEditor } from "./editors";
 import { Draft, dataToDraft, draftToData, draftTotals, validateDraft } from "./draft";
 import { Alert, Button, MoneyInput, Panel, useToast } from "./ui";
+import { Mascot } from "./Mascot";
 
 export function Settings({ data }: { data: AppData }) {
   const toast = useToast();
@@ -97,6 +98,14 @@ export function Settings({ data }: { data: AppData }) {
         <Button variant="danger" className="mt-4" onClick={wipe}>
           Effacer toutes mes données
         </Button>
+      </Panel>
+      <Panel title="Fait par…">
+        <div className="flex items-center gap-4">
+          <Mascot mood="fierte" size={112} framed />
+          <p className="text-[0.95rem]">
+            Okane est faite à la main, avec fierté, par son créateur. Gratuite, sans pub, et tes données restent chez toi.
+          </p>
+        </div>
       </Panel>
       <p className="text-center text-xs text-ink-2">Outil de suivi personnel, pas un conseil financier. Pour un placement ou un crédit, consulte un professionnel.</p>
     </div>

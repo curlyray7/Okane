@@ -5,6 +5,7 @@ import { colorFor, envelopeCats, fixedCats, getMonth, monthReview, savedInMonth,
 import { addMonths, eur, monthKey, monthLabel, monthShort } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { Alert, Button, Panel, useToast } from "./ui";
+import { MascotSays } from "./Mascot";
 
 export function Review({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
@@ -23,7 +24,11 @@ export function Review({ data, month }: { data: AppData; month: string }) {
   return (
     <div className="grid items-start gap-4 min-[860px]:grid-cols-[1.1fr_.9fr]">
       <div className="grid gap-4">
-        {r.overruns.length === 0 ? (
+        {r.overruns.length === 0 && ended ? (
+          <MascotSays mood="fierte">
+            <span className="inline-block first-letter:uppercase">{monthLabel(month)}</span> bouclé sans aucun dépassement. Sugoi !
+          </MascotSays>
+        ) : r.overruns.length === 0 ? (
           <Alert tone="ok">Aucune enveloppe dépassée en {monthLabel(month)}. Yosh !</Alert>
         ) : (
           <Alert tone="bad">

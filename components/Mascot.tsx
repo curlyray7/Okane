@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export type Mood = "neutre" | "contente" | "inquiete" | "victoire";
+export type Mood = "neutre" | "contente" | "inquiete" | "victoire" | "fierte";
 
 /** Mascotte : dessins dans public/mascotte/<mood>.png, avec un visage SVG de secours tant qu’ils manquent. */
 /** `framed` : dans un médaillon rond, pour que la tenue sombre se détache aussi en thème sombre. */
@@ -32,7 +32,7 @@ export function Mascot({ mood, size = 96, framed = false, className = "" }: { mo
 }
 
 function Fallback({ mood }: { mood: Mood }) {
-  const happy = mood === "contente" || mood === "victoire";
+  const happy = mood === "contente" || mood === "victoire" || mood === "fierte";
   return (
     <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden="true">
       {mood === "victoire" &&

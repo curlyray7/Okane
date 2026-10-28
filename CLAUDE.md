@@ -22,7 +22,7 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
   - `ExpenseSheet` : saisie montant + enveloppe + libellé ; la date est automatique.
   - `editors.tsx` + `draft.ts` : édition des listes et validation, partagés par Onboarding et Settings.
   - `ui.tsx` : Button, Panel, Bar, Alert, MoneyInput, Toast.
-  - `Mascot.tsx` : mascotte (`neutre` | `contente` | `inquiete` | `victoire`) lue dans `public/mascotte/<mood>.png` (480 px, originaux pleine taille dans `design/mascotte/`), visage SVG de secours si l’image manque. `MascotSays` = mascotte en médaillon rond + bulle. Sur l’accueil, l’humeur suit le budget (dépassement → inquiète, objectif atteint → victoire, épargne cochée → contente).
+  - `Mascot.tsx` : mascotte (`neutre` | `contente` | `inquiete` | `victoire` | `fierte`) lue dans `public/mascotte/<mood>.png` (480 px, originaux pleine taille dans `design/mascotte/`), visage SVG de secours si l’image manque. `MascotSays` = mascotte en médaillon rond + bulle. Sur l’accueil, l’humeur suit le budget (dépassement → inquiète, objectif atteint → victoire, épargne cochée → contente). `fierte` (drapeau israélien, kippa) apparaît au récap de l’onboarding quand chaque euro a sa mission, au bilan d’un mois terminé sans dépassement, et dans l’encart « Fait par… » des Réglages.
 - `lib/` :
   - `types.ts` : `AppData` { incomes, categories (kind `fixed` | `envelope`), goals, savingsMonthly, margin, initialSavings, months[YYYY-MM] }.
   - `store.ts` : `useData` / `setData` / `updateData` via `useSyncExternalStore`.
@@ -42,7 +42,6 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
 - Typo : Bangers (`font-manga`) pour titres et gros montants, Rubik pour le reste et les montants en liste.
 - Toujours passer par les tokens CSS (`bg-surface`, `text-ink-2`, etc.), jamais de couleur en dur. Tester le clair et le sombre.
 - Ton : tutoiement, références anime et quelques mots japonais ponctuels (« Yosh ! », « Ganbatte ! », « Sugoi ! ») sans gêner la lecture. Apostrophes typographiques ’ dans les textes affichés.
-- Pas de stéréotypes ni de symboles religieux ou politiques dans l’identité visuelle.
 - Mobile d'abord, safe areas iOS gérées (`env(safe-area-inset-*)`).
 
 ## Hors périmètre V1 / pistes V2

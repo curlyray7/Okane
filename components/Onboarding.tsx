@@ -6,7 +6,7 @@ import { eur, eur0, monthKey, round2 } from "@/lib/format";
 import { Alert, Button, MoneyInput } from "./ui";
 import { GoalsEditor, RowsEditor, newGoalRow } from "./editors";
 import { Draft, draftToData, draftTotals, emptyDraft, validateDraft } from "./draft";
-import { Mascot } from "./Mascot";
+import { Mascot, MascotSays } from "./Mascot";
 
 const STEPS = ["welcome", "incomes", "fixed", "envelopes", "savings", "goals", "recap"] as const;
 type Step = (typeof STEPS)[number];
@@ -153,7 +153,11 @@ export function Onboarding() {
             </div>
           </div>
           <div className="mt-4">
-            <AllocateAlert value={totals.toAllocate} />
+            {Math.abs(totals.toAllocate) < 0.01 ? (
+              <MascotSays mood="fierte">Chaque euro a sa mission. Sugoi, ton budget est prêt !</MascotSays>
+            ) : (
+              <AllocateAlert value={totals.toAllocate} />
+            )}
           </div>
           {totals.income > 0 && totals.savings / totals.income < 0.05 && (
             <div className="mt-3">

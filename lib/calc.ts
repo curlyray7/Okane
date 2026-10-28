@@ -1,5 +1,5 @@
 import { SAVINGS, type AppData, type Category, type MonthData } from "./types";
-import { monthKey, monthsBetween, round2 } from "./format";
+import { addMonths, monthKey, monthsBetween, round2 } from "./format";
 
 export const EMPTY_MONTH: MonthData = { expenses: [], savingsDone: 0, bonus: 0 };
 
@@ -26,8 +26,30 @@ export const extraSavings = (m: MonthData) => sumBy((m.extras ?? []).filter((x) 
 
 export const savedInMonth = (m: MonthData) => round2((m.savingsDone || 0) + (m.bonus || 0) + extraSavings(m));
 
-/** Budget de chaque enveloppe pour ce mois : budget prévu + rentrées en plus qui lui sont données ± argent déplacé. */
+/**
+ * Budget de chaque enveloppe pour ce mois : budget prévu + rentrées en plus qui lui sont données ± argent déplacé,
+ * + pour une enveloppe cumulative, ce qui restait (ou manquait) à la fin du mois précédent, depuis le premier mois suivi.
+ */
 export function envelopeBudgets(d: AppData, key: string) {
+  const map = monthBudgets(d, key);
+  const rolling = envelopeCats(d).filter((c) => c.rollover);
+  if (rolling.length === 0 || key <= d.startMonth) return map;
+  const carry: Record<string, number> = {};
+  for (let k = d.startMonth; k < key; k = addMonths(k, 1)) {
+    const b = monthBudgets(d, k);
+    const s = spentByCategory(d, k);
+    for (const c of rolling) carry[c.id] = round2(b[c.id] + (carry[c.id] ?? 0) - (s[c.id] ?? 0));
+  }
+  for (const c of rolling) map[c.id] = round2(map[c.id] + (carry[c.id] ?? 0));
+  return map;
+}
+
+/** Report reçu du mois précédent par une enveloppe cumulative. */
+export function rolledOver(d: AppData, key: string, c: Category) {
+  return c.rollover ? round2(envelopeBudgets(d, key)[c.id] - monthBudgets(d, key)[c.id]) : 0;
+}
+
+function monthBudgets(d: AppData, key: string) {
   const map: Record<string, number> = {};
   for (const c of envelopeCats(d)) map[c.id] = c.budget;
   const m = getMonth(d, key);
@@ -80,7 +102,11 @@ export function monthReview(d: AppData, key: string) {
   const envBudget = sumBy(envs, (c) => budgets[c.id]);
   const allSpent = sumBy(m.expenses, (e) => e.amount);
   const saved = savedInMonth(m);
-  const leftover = sumBy(envs, (c) => Math.max(0, budgets[c.id] - (spent[c.id] ?? 0)));
+  // Les enveloppes cumulatives gardent leur reste : il n’est pas proposé en épargne bonus.
+  const leftover = sumBy(
+    envs.filter((c) => !c.rollover),
+    (c) => Math.max(0, budgets[c.id] - (spent[c.id] ?? 0)),
+  );
   const overruns = envs
     .filter((c) => (spent[c.id] ?? 0) > budgets[c.id] + 0.004)
     .map((c) => ({ cat: c, by: round2((spent[c.id] ?? 0) - budgets[c.id]) }));

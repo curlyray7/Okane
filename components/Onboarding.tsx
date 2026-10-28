@@ -98,7 +98,7 @@ export function Onboarding() {
 
       {step === "envelopes" && (
         <StepFrame title="Tes enveloppes de dépenses" hint="Les dépenses qui varient : courses, sorties, vêtements… Fixe un montant par mois pour chacune.">
-          <RowsEditor rows={draft.envelopes} onChange={(envelopes) => patch({ envelopes })} namePlaceholder="ex. Courses" addLabel="Ajouter une enveloppe" />
+          <RowsEditor rows={draft.envelopes} onChange={(envelopes) => patch({ envelopes })} namePlaceholder="ex. Courses" addLabel="Ajouter une enveloppe" rollover />
           <Remaining value={round2(totals.income - totals.fixed - totals.envelopes)} />
         </StepFrame>
       )}

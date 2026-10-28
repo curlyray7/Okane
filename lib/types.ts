@@ -11,6 +11,8 @@ export interface Category {
   name: string;
   kind: CategoryKind;
   budget: number;
+  /** Enveloppe cumulative : le non-dépensé (ou le dépassement) est reporté sur le mois suivant */
+  rollover?: boolean;
 }
 
 export interface Goal {

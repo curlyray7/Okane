@@ -7,6 +7,8 @@ export interface Row {
   id: string;
   name: string;
   amount: string;
+  /** Enveloppes seulement : garder le reste le mois suivant */
+  rollover?: boolean;
 }
 export interface GoalRow {
   id: string;
@@ -23,17 +25,20 @@ export function RowsEditor({
   onChange,
   namePlaceholder,
   addLabel,
+  rollover = false,
 }: {
   rows: Row[];
   onChange: (rows: Row[]) => void;
   namePlaceholder: string;
   addLabel: string;
+  /** Affiche l’option « garder le reste » (enveloppes) */
+  rollover?: boolean;
 }) {
   const set = (id: string, patch: Partial<Row>) => onChange(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   return (
     <div className="space-y-2">
       {rows.map((r, i) => (
-        <div key={r.id} className="grid grid-cols-[1fr_120px_36px] items-center gap-2">
+        <div key={r.id} className={`grid grid-cols-[1fr_120px_36px] items-center gap-x-2 ${rollover ? "gap-y-1" : ""}`}>
           <TextInput
             aria-label={`Nom, ligne ${i + 1}`}
             placeholder={namePlaceholder}
@@ -50,6 +55,12 @@ export function RowsEditor({
           >
             ✕
           </button>
+          {rollover && (
+            <label className="col-span-3 flex items-center gap-2 pl-1 text-[0.8rem] text-ink-2">
+              <input type="checkbox" checked={!!r.rollover} onChange={(e) => set(r.id, { rollover: e.target.checked })} className="h-4 w-4 accent-[var(--accent)]" />
+              Garder le reste le mois suivant (cadeaux, vêtements, vacances…)
+            </label>
+          )}
         </div>
       ))}
       <button type="button" className="mt-1 rounded-xl border-2 border-dashed border-accent px-4 py-2.5 text-sm font-semibold text-accent" onClick={() => onChange([...rows, newRow()])}>

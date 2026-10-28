@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AppData } from "@/lib/types";
 import { setData, updateData } from "@/lib/store";
 import { daysSince, downloadBackup, persistStorage, readBackup } from "@/lib/backup";
+import { applyTheme, readTheme, type ThemeChoice } from "@/lib/theme";
 import { categoryName } from "@/lib/calc";
 import { IGNORE } from "@/lib/bankImport";
 import { SAVINGS } from "@/lib/types";
@@ -34,9 +35,15 @@ export function Settings({ data }: { data: AppData }) {
   };
 
   const [persisted, setPersisted] = useState<boolean | null>(null);
+  const [theme, setTheme] = useState<ThemeChoice>("auto");
   useEffect(() => {
     persistStorage().then(setPersisted);
+    setTheme(readTheme());
   }, []);
+  const pickTheme = (t: ThemeChoice) => {
+    applyTheme(t);
+    setTheme(t);
+  };
 
   const backup = () => {
     const at = downloadBackup(data);
@@ -79,7 +86,7 @@ export function Settings({ data }: { data: AppData }) {
         <RowsEditor rows={draft.fixed} onChange={(fixed) => patch({ fixed })} namePlaceholder="ex. Loyer" addLabel="Ajouter une charge" />
       </Panel>
       <Panel title="Enveloppes" action={<Sum v={totals.envelopes} />} id="reglages-enveloppes">
-        <RowsEditor rows={draft.envelopes} onChange={(envelopes) => patch({ envelopes })} namePlaceholder="ex. Courses" addLabel="Ajouter une enveloppe" />
+        <RowsEditor rows={draft.envelopes} onChange={(envelopes) => patch({ envelopes })} namePlaceholder="ex. Courses" addLabel="Ajouter une enveloppe" rollover />
         <p className="mt-3 text-sm text-ink-2">Supprimer une enveloppe garde les dépenses déjà notées dans l’historique.</p>
       </Panel>
       <Panel title="Épargne">
@@ -144,6 +151,29 @@ export function Settings({ data }: { data: AppData }) {
         </Panel>
       )}
 
+      <Panel title="Apparence">
+        <div className="grid grid-cols-3 gap-1 rounded-xl border-2 border-ink p-1" role="group" aria-label="Thème">
+          {(
+            [
+              ["auto", "Auto"],
+              ["light", "Clair"],
+              ["dark", "Sombre"],
+            ] as const
+          ).map(([t, l]) => (
+            <button
+              key={t}
+              type="button"
+              aria-pressed={theme === t}
+              onClick={() => pickTheme(t)}
+              className={`rounded-lg py-2 text-[0.9rem] font-semibold ${theme === t ? "bg-accent text-on-accent" : "text-ink-2"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[0.82rem] text-ink-2">Auto suit le réglage de ton téléphone. Ce choix vaut pour cet appareil.</p>
+      </Panel>
+
       <Panel title="Sauvegarde">
         <p className="text-[0.95rem] text-ink-2">
           Ton budget est enregistré uniquement sur cet appareil. Télécharge une sauvegarde de temps en temps : elle te permet de tout
@@ -194,7 +224,7 @@ function Sum({ v }: { v: number }) {
 /** Libellé d’une règle d’import : « Courses », « Ignorer », « Remboursement · Sorties », « En plus · Épargne ». */
 function ruleTarget(data: AppData, target: string, credit: boolean) {
   if (target === IGNORE) return credit ? "Rentrée ignorée" : "Ignorer";
-  if (!credit) return categoryName(data, target);
+  if (!credit) return target === SAVINGS ? "Épargne du mois" : categoryName(data, target);
   const [kind, id] = target.split(":");
   return `${kind === "refund" ? "Remboursement" : "En plus"} · ${id === SAVINGS ? "Épargne" : categoryName(data, id)}`;
 }

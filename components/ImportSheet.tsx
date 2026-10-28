@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SAVINGS, type AppData } from "@/lib/types";
 import { colorFor, envelopeCats } from "@/lib/calc";
-import { dayLabel, eur, isoDate, uid } from "@/lib/format";
+import { dayLabel, eur, isoDate, round2, uid } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { BankLine, CreditReason, IGNORE, Reason, alreadyImported, keywordFor, learnRule, placesIn, prettyLabel, readStatement, suggest, suggestCredit } from "@/lib/bankImport";
 import { Alert, Button, useToast } from "./ui";
@@ -21,6 +21,7 @@ const REASON: Record<Reason | CreditReason, string> = {
   rule: "Règle apprise",
   fixed: "Charge fixe, déjà comptée",
   duplicate: "Déjà saisie à la main ?",
+  savings: "Virement vers ton épargne : coche l’épargne du mois",
   merchant: "Remboursement d’un commerçant connu",
   transfer: "Virement depuis ton épargne",
   income: "Revenu déjà prévu dans ton budget",
@@ -82,6 +83,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
   const confirm = () => {
     if (!rows) return;
     let firstMonth = "";
+    const savedByMonth: Record<string, number> = {};
     const places = placesIn(rows.map((r) => r.label));
     const ok = updateData((d) => {
       d.rules ??= [];
@@ -90,6 +92,11 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
         if (!r.target) continue;
         if (r.target === IGNORE) {
           d.ignoredImports.push(r.ref);
+        } else if (!r.credit && r.target === SAVINGS) {
+          // Virement vers l’épargne : pas une dépense, il confirme l’épargne du mois.
+          d.ignoredImports.push(r.ref);
+          const key = r.date.slice(0, 7);
+          savedByMonth[key] = round2((savedByMonth[key] ?? 0) + r.amount);
         } else {
           const key = r.date.slice(0, 7);
           const m = (d.months[key] ??= { expenses: [], savingsDone: 0, bonus: 0 });
@@ -108,6 +115,10 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
           const clash = r.reason === "rule" || rows.some((o) => o.credit === r.credit && o.target && o.target !== r.target && keywordFor(o.label, places) === short);
           learnRule(d.rules, clash ? keywordFor(r.label, places, true) : short, r.target, uid, r.credit);
         }
+      }
+      for (const [key, amount] of Object.entries(savedByMonth)) {
+        const m = (d.months[key] ??= { expenses: [], savingsDone: 0, bonus: 0 });
+        m.savingsDone = Math.max(m.savingsDone, amount);
       }
       d.ignoredImports = d.ignoredImports.slice(-3000);
       if (firstMonth && firstMonth < d.startMonth) d.startMonth = firstMonth;
@@ -268,6 +279,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
                                   {c.name}
                                 </option>
                               ))}
+                              <option value={SAVINGS}>Épargne du mois (virement vers mon épargne)</option>
                               <option value={IGNORE}>Ignorer (charge fixe, virement…)</option>
                             </>
                           )}
@@ -313,7 +325,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
 
 function dotColor(data: AppData, r: Row) {
   if (!r.target || r.target === IGNORE) return "transparent";
-  if (!r.credit) return colorFor(data, r.target);
+  if (!r.credit) return r.target === SAVINGS ? "var(--save)" : colorFor(data, r.target);
   const id = r.target.split(":")[1];
   return id === SAVINGS ? "var(--save)" : colorFor(data, id);
 }

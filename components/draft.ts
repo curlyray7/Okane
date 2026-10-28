@@ -68,7 +68,7 @@ export function draftToData(d: Draft, base?: AppData): Omit<AppData, "months" | 
   const keepId = (r: Row) => r.id;
   const incomes: Income[] = filled(d.incomes).map((r) => ({ id: keepId(r), name: r.name.trim(), amount: num(r.amount) }));
   const cat = (rows: Row[], kind: Category["kind"]): Category[] =>
-    filled(rows).map((r) => ({ id: keepId(r), name: r.name.trim(), kind, budget: num(r.amount) }));
+    filled(rows).map((r) => ({ id: keepId(r), name: r.name.trim(), kind, budget: num(r.amount), ...(kind === "envelope" && r.rollover ? { rollover: true } : {}) }));
   const goals: Goal[] = d.goals
     .filter((g) => g.name.trim() && (parseAmount(g.target) ?? 0) > 0 && /^\d{4}-\d{2}$/.test(g.deadline))
     .map((g) => ({ id: g.id, name: g.name.trim(), target: num(g.target), deadline: g.deadline }));
@@ -85,7 +85,7 @@ export function draftToData(d: Draft, base?: AppData): Omit<AppData, "months" | 
 
 export function dataToDraft(a: AppData): Draft {
   const rows = (kind: Category["kind"]) =>
-    a.categories.filter((c) => c.kind === kind).map((c) => ({ id: c.id, name: c.name, amount: toStr(c.budget) }));
+    a.categories.filter((c) => c.kind === kind).map((c) => ({ id: c.id, name: c.name, amount: toStr(c.budget), ...(c.rollover ? { rollover: true } : {}) }));
   return {
     incomes: a.incomes.map((i) => ({ id: i.id, name: i.name, amount: toStr(i.amount) })),
     fixed: rows("fixed"),

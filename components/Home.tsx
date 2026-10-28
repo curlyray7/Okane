@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { AppData } from "@/lib/types";
-import { colorFor, envelopeBudgets, envelopeCats, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
+import { colorFor, envelopeBudgets, envelopeCats, rolledOver, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
 import { daysInMonth, eur, eur0, monthKey, ofMonth, round2 } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { AllocateAlert } from "./Onboarding";
@@ -129,6 +129,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
             const s = spent[c.id] ?? 0;
             const st = envelopeStatus(c, s, budgets[c.id]);
             const changed = Math.abs(budgets[c.id] - c.budget) >= 0.01;
+            const carried = rolledOver(data, month, c);
             const col = st.level === "over" ? "var(--over)" : st.level === "near" ? "var(--warn)" : colorFor(data, c.id);
             return (
               <div key={c.id} className="border-b border-line py-3 last:border-b-0">
@@ -136,6 +137,11 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                   <span className="flex items-center gap-2 font-semibold">
                     <i className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: colorFor(data, c.id) }} />
                     {c.name}
+                    {c.rollover && (
+                      <span className="rounded-full border border-line px-1.5 text-[0.7rem] font-semibold text-ink-2" title="Garde son reste d’un mois sur l’autre">
+                        cumul
+                      </span>
+                    )}
                   </span>
                   <span className={`font-display font-semibold tabular ${st.level === "over" ? "text-over" : st.level === "near" ? "text-warn" : ""}`}>
                     {st.left < 0 ? `− ${eur(-st.left)}` : eur(st.left)}
@@ -148,9 +154,15 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                   <span>{eur(s)} dépensés</span>
                   <span>
                     sur {eur(budgets[c.id])}
-                    {changed && <span className={budgets[c.id] > c.budget ? "text-save" : ""}> (prévu {eur(c.budget)})</span>}
+                    {Math.abs(carried) < 0.01 && changed && <span className={budgets[c.id] > c.budget ? "text-save" : ""}> (prévu {eur(c.budget)})</span>}
                   </span>
                 </div>
+                {Math.abs(carried) >= 0.01 && (
+                  <p className={`mt-0.5 text-[0.8rem] ${carried > 0 ? "text-save" : "text-over"}`}>
+                    ↻ {carried > 0 ? "+" : "−"}
+                    {eur(Math.abs(carried))} {carried > 0 ? "gardés" : "à rattraper"} du mois dernier
+                  </p>
+                )}
                 {st.left < 0 && envs.length >= 2 && (
                   <Button variant="ghost" className="mt-2 px-3 py-1.5 text-left text-sm !whitespace-normal" onClick={() => setMove({ to: c.id, amount: -st.left })}>
                     Combler les {eur(-st.left)} avec une autre enveloppe

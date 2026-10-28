@@ -291,16 +291,16 @@ export function prettyLabel(label: string) {
   return s.slice(0, 60);
 }
 
-export type Reason = "rule" | "fixed" | "duplicate" | "none";
+export type Reason = "rule" | "fixed" | "duplicate" | "savings" | "none";
 export interface Suggestion {
   target: string;
   reason: Reason;
 }
 
-/** Proposition de classement : règle apprise, charge fixe, doublon d’une saisie manuelle, ou à classer. */
+/** Proposition de classement : doublon d’une saisie manuelle, règle apprise, virement vers l’épargne, charge fixe, ou à classer. */
 export function suggest(d: AppData, line: BankLine, manualTaken: Set<string>): Suggestion {
   const label = normalizeLabel(line.label);
-  const valid = (t: string) => t === IGNORE || d.categories.some((c) => c.id === t && c.kind === "envelope");
+  const valid = (t: string) => t === IGNORE || t === SAVINGS || d.categories.some((c) => c.id === t && c.kind === "envelope");
   const rule = findRule(d, label, false, valid);
 
   const dup = findManualDuplicate(d, line, manualTaken);
@@ -309,6 +309,8 @@ export function suggest(d: AppData, line: BankLine, manualTaken: Set<string>): S
     return { target: IGNORE, reason: "duplicate" };
   }
   if (rule) return { target: rule.target, reason: "rule" };
+  // Virement vers un livret : c’est l’épargne du mois, pas une dépense.
+  if (OWN_TRANSFER.test(label)) return { target: SAVINGS, reason: "savings" };
   const fixed = d.categories.find((c) => {
     const n = normalizeLabel(c.name);
     return c.kind === "fixed" && n.length >= 3 && hasWords(label, n);

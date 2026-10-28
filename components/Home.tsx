@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { AppData } from "@/lib/types";
-import { colorFor, envelopeBudgets, envelopeCats, rolledOver, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
+import { colorFor, envelopeBudgets, envelopeCats, refundsByCategory, rolledOver, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
 import { daysInMonth, eur, eur0, monthKey, ofMonth, round2 } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { AllocateAlert } from "./Onboarding";
@@ -15,7 +15,10 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
   const [move, setMove] = useState<{ to?: string; amount?: number } | null>(null);
   const envs = envelopeCats(data);
+  // Net = achats − remboursements. Un remboursement plus gros que les achats du mois ne s’affiche jamais en « dépense négative ».
   const spent = spentByCategory(data, month);
+  const refunds = refundsByCategory(data, month);
+  const refunded = sumBy(envs, (c) => refunds[c.id] ?? 0);
   // Budget du mois : budget prévu + rentrées en plus données à l’enveloppe ± argent déplacé.
   const budgets = envelopeBudgets(data, month);
   const budget = sumBy(envs, (c) => budgets[c.id]);
@@ -65,7 +68,8 @@ export function Home({ data, month }: { data: AppData; month: string }) {
             {eur(available)}
           </p>
           <p className="mt-1.5 text-sm text-on-hero/75">
-            {eur(used)} dépensés sur {eur(budget)}
+            {eur(round2(used + refunded))} dépensés sur {eur(budget)}
+            {refunded > 0 && <span className="text-pop"> · +{eur(refunded)} remboursés</span>}
           </p>
           {perDay > 0 && (
             <p className="mt-2 inline-block rounded-full border-2 border-pop px-3 py-1 text-sm font-semibold text-pop">
@@ -151,12 +155,15 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                   <Bar value={st.ratio} color={col} />
                 </div>
                 <div className="mt-1 flex justify-between text-[0.82rem] text-ink-2">
-                  <span>{eur(s)} dépensés</span>
+                  <span>{eur(Math.max(0, s))} dépensés</span>
                   <span>
                     sur {eur(budgets[c.id])}
                     {Math.abs(carried) < 0.01 && changed && <span className={budgets[c.id] > c.budget ? "text-save" : ""}> (prévu {eur(c.budget)})</span>}
                   </span>
                 </div>
+                {(refunds[c.id] ?? 0) > 0 && (
+                  <p className="mt-0.5 text-[0.8rem] text-save">↩ {eur(refunds[c.id])} remboursés ce mois-ci, ils reviennent dans l’enveloppe</p>
+                )}
                 {Math.abs(carried) >= 0.01 && (
                   <p className={`mt-0.5 text-[0.8rem] ${carried > 0 ? "text-save" : "text-over"}`}>
                     ↻ {carried > 0 ? "+" : "−"}

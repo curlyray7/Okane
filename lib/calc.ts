@@ -24,6 +24,13 @@ export function spentByCategory(d: AppData, key: string) {
 /** Rentrées en plus du mois versées à l'épargne. */
 export const extraSavings = (m: MonthData) => sumBy((m.extras ?? []).filter((x) => x.target === SAVINGS), (x) => x.amount);
 
+/** Remboursements du mois par enveloppe (montants positifs) : à afficher à part, jamais comme une dépense négative. */
+export function refundsByCategory(d: AppData, key: string) {
+  const map: Record<string, number> = {};
+  for (const e of getMonth(d, key).expenses) if (e.amount < 0) map[e.categoryId] = round2((map[e.categoryId] ?? 0) - e.amount);
+  return map;
+}
+
 export const savedInMonth = (m: MonthData) => round2((m.savingsDone || 0) + (m.bonus || 0) + extraSavings(m));
 
 /**
@@ -101,6 +108,8 @@ export function monthReview(d: AppData, key: string) {
   const fixed = sumBy(fixedCats(d), (c) => c.budget);
   const envBudget = sumBy(envs, (c) => budgets[c.id]);
   const allSpent = sumBy(m.expenses, (e) => e.amount);
+  const purchases = sumBy(m.expenses, (e) => Math.max(0, e.amount));
+  const refunds = round2(purchases - allSpent);
   const saved = savedInMonth(m);
   // Les enveloppes cumulatives gardent leur reste : il n’est pas proposé en épargne bonus.
   const leftover = sumBy(
@@ -116,6 +125,8 @@ export function monthReview(d: AppData, key: string) {
     fixed,
     envBudget,
     envSpent: allSpent,
+    purchases,
+    refunds,
     saved,
     plannedSavings: d.savingsMonthly,
     balance: round2(income + extra - fixed - allSpent - saved),

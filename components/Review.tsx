@@ -81,7 +81,8 @@ export function Review({ data, month }: { data: AppData; month: string }) {
           <Row label="Revenus prévus" value={eur(r.income)} />
           {r.extra > 0 && <Row label="Rentrées en plus" value={`+ ${eur(r.extra)}`} />}
           <Row label="Charges fixes" value={`− ${eur(r.fixed)}`} />
-          <Row label="Dépenses des enveloppes" note={`budget ${eur(r.envBudget)}`} value={`− ${eur(r.envSpent)}`} />
+          <Row label="Dépenses des enveloppes" note={`budget ${eur(r.envBudget)}`} value={`− ${eur(r.purchases)}`} />
+          {r.refunds > 0 && <Row label="Remboursements" value={`+ ${eur(r.refunds)}`} />}
           <Row label="Épargne versée" note={`prévu ${eur(r.plannedSavings)}`} value={`− ${eur(r.saved)}`} />
           <div className="flex justify-between pt-3 font-semibold">
             <span>Reste sur le compte courant</span>
@@ -104,7 +105,7 @@ export function Review({ data, month }: { data: AppData; month: string }) {
                 {c.name}
               </span>
               <span className="tabular">
-                <b className={`font-display ${s > r.budgets[c.id] ? "text-over" : ""}`}>{eur(s)}</b>
+                <b className={`font-display ${s > r.budgets[c.id] ? "text-over" : ""}`}>{eur(Math.max(0, s))}</b>
                 <span className="text-sm text-ink-2"> / {eur(r.budgets[c.id])}</span>
               </span>
             </div>
@@ -131,7 +132,7 @@ function History({ data, month }: { data: AppData; month: string }) {
   const keys = Array.from({ length: 6 }, (_, i) => addMonths(month, i - 5));
   const rows = keys.map((k) => {
     const m = data.months[k];
-    return { k, has: k >= data.startMonth && k <= monthKey(), spent: fixed + sumBy(m?.expenses ?? [], (e) => e.amount), saved: m ? savedInMonth(m) : 0 };
+    return { k, has: k >= data.startMonth && k <= monthKey(), spent: fixed + Math.max(0, sumBy(m?.expenses ?? [], (e) => e.amount)), saved: m ? savedInMonth(m) : 0 };
   });
   const max = Math.max(1, ...rows.filter((r) => r.has).map((r) => Math.max(r.spent, r.saved)));
   const W = 600;

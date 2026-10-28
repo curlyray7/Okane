@@ -25,7 +25,8 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
     ...m.expenses.map((e) => ({ id: e.id, date: e.date, createdAt: e.createdAt, label: e.label, amount: e.amount, cat: e.categoryId, extra: false, imported: !!e.importId })),
     ...(m.extras ?? []).map((x) => ({ id: x.id, date: x.date, createdAt: x.createdAt, label: x.label, amount: x.amount, cat: x.target, extra: true, imported: !!x.importId })),
   ].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-  const spent = sumBy(m.expenses, (e) => e.amount);
+  const spent = sumBy(m.expenses, (e) => Math.max(0, e.amount));
+  const refunded = sumBy(m.expenses, (e) => Math.max(0, -e.amount));
   const extras = sumBy(m.extras ?? [], (x) => x.amount);
 
   if (list.length === 0)
@@ -53,6 +54,12 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
           <span>Dépensé ce mois</span>
           <b className="font-display tabular">{eur(spent)}</b>
         </div>
+        {refunded > 0 && (
+          <div className="mt-1 flex justify-between text-save">
+            <span>Remboursements</span>
+            <b className="font-display tabular">+{eur(refunded)}</b>
+          </div>
+        )}
         {extras > 0 && (
           <div className="mt-1 flex justify-between text-save">
             <span>Rentrées en plus</span>

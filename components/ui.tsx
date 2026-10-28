@@ -31,14 +31,16 @@ export function Panel({
   children,
   className = "",
   action,
+  id,
 }: {
   title?: string;
   children: React.ReactNode;
   className?: string;
   action?: React.ReactNode;
+  id?: string;
 }) {
   return (
-    <section className={`rounded-[20px] border-2 border-ink bg-surface p-[18px] shadow-ink ${className}`}>
+    <section id={id} className={`rounded-[20px] border-2 border-ink bg-surface p-[18px] shadow-ink ${className}`}>
       {(title || action) && (
         <div className="mb-3 flex items-center justify-between gap-3">
           {title && <h2 className="font-manga text-[1.6rem] leading-none">{title}</h2>}

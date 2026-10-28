@@ -162,17 +162,19 @@ body::before {
   mask-image: radial-gradient(circle at 85% 15%, transparent 12%, #000 70%);
 }
 /* « Power up » : petit saut + aura cyan quand un cap est franchi. */
+/* Halo par drop-shadow : il suit la forme de l’élément (mascotte détourée) au lieu de dessiner un carré. */
 @keyframes power-up {
   0% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--pop) 60%, transparent);
+    filter: drop-shadow(0 0 0 transparent);
   }
   40% {
     transform: scale(1.04);
+    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--pop) 80%, transparent));
   }
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 14px transparent;
+    filter: drop-shadow(0 0 0 transparent);
   }
 }
 .power-up {
@@ -186,9 +188,12 @@ body::before {
 .float {
   animation: float 3.2s ease-in-out infinite;
 }
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+/* En couche base : un champ peut retirer le contour avec outline-none (gros montant de la saisie). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 /* En couche base pour que les utilitaires (taille, police) puissent la surcharger. */
 @layer base {

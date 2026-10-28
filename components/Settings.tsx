@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AppData } from "@/lib/types";
 import { setData, updateData } from "@/lib/store";
+import { daysSince, downloadBackup, persistStorage, readBackup } from "@/lib/backup";
 import { categoryName } from "@/lib/calc";
 import { IGNORE } from "@/lib/bankImport";
 import { SAVINGS } from "@/lib/types";
-import { eur } from "@/lib/format";
+import { eur, round2 } from "@/lib/format";
 import { AllocateAlert } from "./Onboarding";
 import { GoalsEditor, RowsEditor } from "./editors";
 import { Draft, dataToDraft, draftToData, draftTotals, validateDraft } from "./draft";
@@ -32,6 +33,31 @@ export function Settings({ data }: { data: AppData }) {
     toast(ok ? "Budget enregistré" : "Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué.");
   };
 
+  const [persisted, setPersisted] = useState<boolean | null>(null);
+  useEffect(() => {
+    persistStorage().then(setPersisted);
+  }, []);
+
+  const backup = () => {
+    const at = downloadBackup(data);
+    updateData((d) => void (d.lastBackupAt = at));
+    toast("Sauvegarde téléchargée. Garde-la précieusement !");
+  };
+
+  const restore = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const saved = await readBackup(file);
+      const when = saved.lastBackupAt ? ` du ${new Date(saved.lastBackupAt).toLocaleDateString("fr-FR")}` : "";
+      if (!window.confirm(`Remplacer ton budget actuel par celui de la sauvegarde${when} ? Ce qui n’est pas dans la sauvegarde sera perdu.`)) return;
+      const ok = setData(saved);
+      setDraft(dataToDraft(saved));
+      toast(ok ? "Sauvegarde restaurée. Yosh !" : "Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué.");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Sauvegarde illisible.");
+    }
+  };
+
   const wipe = () => {
     if (window.confirm("Effacer définitivement ton budget et toutes tes dépenses sur cet appareil ?")) setData(null);
   };
@@ -40,7 +66,11 @@ export function Settings({ data }: { data: AppData }) {
     <div className="mx-auto grid max-w-[760px] gap-4">
       <h1 className="font-manga text-[2rem] leading-none">Réglages</h1>
       <p className="-mt-2 text-sm text-ink-2">Modifie ce que tu veux, puis enregistre en bas de l’écran.</p>
-      <AllocateAlert value={totals.toAllocate} />
+      <AllocateAlert
+        value={totals.toAllocate}
+        onSave={() => patch({ savingsMonthly: String(round2(totals.savings + totals.toAllocate)).replace(".", ",") })}
+        onAdjust={() => document.getElementById("reglages-enveloppes")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+      />
 
       <Panel title="Revenus mensuels" action={<Sum v={totals.income} />}>
         <RowsEditor rows={draft.incomes} onChange={(incomes) => patch({ incomes })} namePlaceholder="ex. Salaire" addLabel="Ajouter un revenu" />
@@ -48,7 +78,7 @@ export function Settings({ data }: { data: AppData }) {
       <Panel title="Charges fixes" action={<Sum v={totals.fixed} />}>
         <RowsEditor rows={draft.fixed} onChange={(fixed) => patch({ fixed })} namePlaceholder="ex. Loyer" addLabel="Ajouter une charge" />
       </Panel>
-      <Panel title="Enveloppes" action={<Sum v={totals.envelopes} />}>
+      <Panel title="Enveloppes" action={<Sum v={totals.envelopes} />} id="reglages-enveloppes">
         <RowsEditor rows={draft.envelopes} onChange={(envelopes) => patch({ envelopes })} namePlaceholder="ex. Courses" addLabel="Ajouter une enveloppe" />
         <p className="mt-3 text-sm text-ink-2">Supprimer une enveloppe garde les dépenses déjà notées dans l’historique.</p>
       </Panel>
@@ -114,11 +144,33 @@ export function Settings({ data }: { data: AppData }) {
         </Panel>
       )}
 
-      <Panel title="Données">
+      <Panel title="Sauvegarde">
         <p className="text-[0.95rem] text-ink-2">
-          Ton budget est enregistré uniquement dans ce navigateur. Vider les données du site ou changer d’appareil le fait disparaître.
+          Ton budget est enregistré uniquement sur cet appareil. Télécharge une sauvegarde de temps en temps : elle te permet de tout
+          retrouver sur un autre téléphone, ou si le navigateur efface ses données.
         </p>
-        <Button variant="danger" className="mt-4" onClick={wipe}>
+        <p className={`mt-3 text-sm font-semibold ${daysSince(data.lastBackupAt) > 30 ? "text-warn" : "text-save"}`}>
+          {data.lastBackupAt
+            ? `Dernière sauvegarde : ${daysSince(data.lastBackupAt) === 0 ? "aujourd’hui" : `il y a ${daysSince(data.lastBackupAt)} jour${daysSince(data.lastBackupAt) > 1 ? "s" : ""}`}`
+            : "Aucune sauvegarde pour l’instant"}
+        </p>
+        {persisted === false && (
+          <p className="mt-1 text-[0.82rem] text-ink-2">Ce navigateur peut effacer les données d’Okane s’il manque de place : la sauvegarde est ton filet de sécurité.</p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2.5">
+          <Button variant="accent" onClick={backup}>
+            Télécharger ma sauvegarde
+          </Button>
+          <label className="cursor-pointer rounded-xl border-2 border-ink bg-surface px-4 py-2.5 font-semibold whitespace-nowrap">
+            Restaurer une sauvegarde
+            <input type="file" accept=".json,application/json" className="sr-only" onChange={(e) => {
+                restore(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+        </div>
+        <Button variant="danger" className="mt-5" onClick={wipe}>
           Effacer toutes mes données
         </Button>
       </Panel>

@@ -156,7 +156,11 @@ export function Onboarding() {
             {Math.abs(totals.toAllocate) < 0.01 ? (
               <MascotSays mood="fierte">Chaque euro a sa mission. Sugoi, ton budget est prêt !</MascotSays>
             ) : (
-              <AllocateAlert value={totals.toAllocate} />
+              <AllocateAlert
+                value={totals.toAllocate}
+                onSave={() => patch({ savingsMonthly: String(round2(totals.savings + totals.toAllocate)).replace(".", ",") })}
+                onAdjust={() => setStep(totals.toAllocate > 0 ? "envelopes" : "savings")}
+              />
             )}
           </div>
           {totals.income > 0 && totals.savings / totals.income < 0.05 && (
@@ -264,18 +268,42 @@ function Line({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex justify-between py-1.5">
       <span className="text-ink-2">{label}</span>
-      <span className="tabular">{eur(value)}</span>
+      <span className="tabular">{value < 0 ? `− ${eur(-value)}` : eur(value)}</span>
     </div>
   );
 }
 
-export function AllocateAlert({ value }: { value: number }) {
+/** « Reste à répartir » : avec un bouton pour verser le reste en épargne et un autre pour ajuster les montants. */
+export function AllocateAlert({ value, onSave, onAdjust }: { value: number; onSave?: () => void; onAdjust?: () => void }) {
   if (Math.abs(value) < 0.01) return <Alert tone="ok">Chaque euro a sa mission. Sugoi !</Alert>;
+  const adjust = onAdjust && (
+    <Button variant="ghost" onClick={onAdjust}>
+      {value > 0 ? "Répartir dans mes enveloppes" : "Ajuster mes montants"}
+    </Button>
+  );
   if (value > 0)
     return (
-      <Alert tone="warn">
+      <Alert
+        tone="warn"
+        action={
+          (onSave || adjust) && (
+            <div className="flex flex-wrap gap-2">
+              {onSave && (
+                <Button variant="save" onClick={onSave}>
+                  Mettre {eur(value)} en épargne
+                </Button>
+              )}
+              {adjust}
+            </div>
+          )
+        }
+      >
         {eur(value)} n’ont pas encore de mission. Ajoute-les à ton épargne ou à une enveloppe, pas d’euro sans mission.
       </Alert>
     );
-  return <Alert tone="bad">Tu prévois {eur(-value)} de plus que ce que tu gagnes. Réduis une enveloppe ou ton épargne.</Alert>;
+  return (
+    <Alert tone="bad" action={adjust}>
+      Tu prévois {eur(-value)} de plus que ce que tu gagnes. Réduis une enveloppe ou ton épargne.
+    </Alert>
+  );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { SAVINGS, type AppData } from "@/lib/types";
 import { colorFor, envelopeBudgets, envelopeCats, getMonth, spentByCategory } from "@/lib/calc";
-import { daysInMonth, eur, isoDate, monthKey, parseAmount, round2, uid } from "@/lib/format";
+import { daysInMonth, eur, isoDate, monthKey, monthLabel, parseAmount, round2, uid } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { Button, TextInput, useToast } from "./ui";
 
@@ -34,6 +34,9 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
   const [amount, setAmount] = useState(existing ? String(Math.abs(existing.amount)).replace(".", ",") : "");
   const [cat, setCat] = useState(existingExtra?.target ?? existingExpense?.categoryId ?? envs[0]?.id ?? "");
   const [label, setLabel] = useState(existing?.label ?? "");
+  const [date, setDate] = useState(existing?.date ?? defaultDate(month));
+  const today = isoDate();
+  const yesterday = isoDate(new Date(Date.now() - 86400000));
   const [error, setError] = useState("");
   const amountRef = useRef<HTMLInputElement>(null);
 
@@ -56,26 +59,33 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
     const a = parseAmount(amount);
     if (a === null || a <= 0) return setError("Indique un montant supérieur à 0.");
     if (!cat) return setError(kind === "extra" ? "Choisis où va cet argent." : "Choisis une enveloppe.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return setError("Choisis une date.");
+    const key = date.slice(0, 7);
     let left = 0;
     const ok = updateData((d) => {
-      const m = (d.months[month] ??= { expenses: [], savingsDone: 0, bonus: 0 });
-      // Une modification peut changer de sorte : on retire l’ancienne ligne et on la recrée au bon endroit.
-      m.expenses = m.expenses.filter((x) => x.id !== existing?.id);
-      if (m.extras) m.extras = m.extras.filter((x) => x.id !== existing?.id);
+      // Une modification peut changer de sorte ou de mois : on retire l’ancienne ligne et on la recrée au bon endroit.
+      const old = d.months[month];
+      if (old) {
+        old.expenses = old.expenses.filter((x) => x.id !== existing?.id);
+        if (old.extras) old.extras = old.extras.filter((x) => x.id !== existing?.id);
+      }
+      const m = (d.months[key] ??= { expenses: [], savingsDone: 0, bonus: 0 });
+      if (key < d.startMonth) d.startMonth = key;
       const base = {
         id: existing?.id ?? uid(),
-        date: existing?.date ?? defaultDate(month),
+        date,
         label: label.trim(),
         createdAt: existing?.createdAt ?? Date.now(),
         ...(existing?.importId ? { importId: existing.importId } : {}),
       };
       if (kind === "extra") (m.extras ??= []).push({ ...base, amount: a, target: cat });
       else m.expenses.push({ ...base, amount: kind === "refund" ? -a : a, categoryId: cat });
-      if (cat !== SAVINGS) left = round2((envelopeBudgets(d, month)[cat] ?? 0) - (spentByCategory(d, month)[cat] ?? 0));
+      if (cat !== SAVINGS) left = round2((envelopeBudgets(d, key)[cat] ?? 0) - (spentByCategory(d, key)[cat] ?? 0));
     });
     if (!ok) return setError("Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué.");
     const name = cat === SAVINGS ? "Épargne" : (envs.find((c) => c.id === cat)?.name ?? "");
-    if (existing) toast("Modification enregistrée");
+    if (key !== month) toast(`Noté en ${monthLabel(key)}`);
+    else if (existing) toast("Modification enregistrée");
     else if (cat === SAVINGS) toast(`${eur(a)} ajoutés à ton épargne. Sugoi !`);
     else toast(left < 0 ? `${name} : dépassée de ${eur(-left)}` : `${name} : ${eur(left)} restants`);
     onClose();
@@ -192,6 +202,21 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
               )}
             </div>
             <TextInput aria-label="Libellé" placeholder="Libellé (facultatif)" maxLength={60} value={label} onChange={(e) => setLabel(e.target.value)} />
+            <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Date">
+              <button type="button" aria-pressed={date === today} onClick={() => setDate(today)} className={chip(date === today)}>
+                Aujourd’hui
+              </button>
+              <button type="button" aria-pressed={date === yesterday} onClick={() => setDate(yesterday)} className={chip(date === yesterday)}>
+                Hier
+              </button>
+              <input
+                type="date"
+                aria-label="Autre date"
+                value={date}
+                onChange={(e) => e.target.value && setDate(e.target.value)}
+                className={`min-w-0 flex-1 rounded-full border-2 px-3 py-1.5 text-[0.9rem] ${date !== today && date !== yesterday ? "border-ink bg-accent-soft" : "border-line bg-surface-2"}`}
+              />
+            </div>
           </>
         )}
         <p className="min-h-[1.3em] pt-1 text-sm text-over" role="alert">

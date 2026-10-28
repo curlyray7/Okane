@@ -22,6 +22,20 @@ export function Shell({ data }: { data: AppData }) {
   const [tab, setTab] = useState<Tab>("accueil");
   const [month, setMonth] = useState(monthKey());
   const [sheet, setSheet] = useState<{ open: boolean; id?: string }>({ open: false });
+  const [fabHidden, setFabHidden] = useState(false);
+
+  // Le bouton + s’efface quand on descend (pour ne pas cacher les montants) et revient quand on remonte.
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (Math.abs(y - last) < 8) return;
+      setFabHidden(y > last && y > 80);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const [importing, setImporting] = useState(false);
 
   useEffect(() => {
@@ -69,8 +83,14 @@ export function Shell({ data }: { data: AppData }) {
           type="button"
           aria-label="Ajouter une dépense"
           onClick={() => setSheet({ open: true })}
-          className="fixed z-20 grid h-[62px] w-[62px] place-items-center rounded-full border-[3px] border-ink bg-pop text-[2.2rem] leading-none font-medium text-on-pop shadow-ink transition-transform active:scale-95 min-[1080px]:right-[calc(50%-520px+18px)]"
-          style={{ right: 18, bottom: "calc(84px + env(safe-area-inset-bottom, 0px))" }}
+          className="fixed z-20 grid h-[62px] w-[62px] place-items-center rounded-full border-[3px] border-ink bg-pop text-[2.2rem] leading-none font-medium text-on-pop shadow-ink transition-[transform,opacity] duration-200 active:scale-95 min-[1080px]:right-[calc(50%-520px+18px)]"
+          style={{
+            right: 18,
+            bottom: "calc(84px + env(safe-area-inset-bottom, 0px))",
+            transform: fabHidden ? "translateY(140%)" : undefined,
+            opacity: fabHidden ? 0 : 1,
+          }}
+          tabIndex={fabHidden ? -1 : 0}
         >
           +
         </button>

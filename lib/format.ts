@@ -51,6 +51,12 @@ export function monthLabel(key: string) {
   );
 }
 
+/** « d’octobre 2026 », « de mars 2026 » : élision devant une voyelle. */
+export function ofMonth(key: string) {
+  const label = monthLabel(key);
+  return /^[aeiouyàâéèêîôû]/i.test(label) ? `d’${label}` : `de ${label}`;
+}
+
 export function monthShort(key: string) {
   const { y, m } = parseKey(key);
   return new Intl.DateTimeFormat("fr-FR", { month: "short" })

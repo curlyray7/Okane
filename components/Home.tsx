@@ -2,11 +2,12 @@
 
 import type { AppData } from "@/lib/types";
 import { colorFor, envelopeBudgets, envelopeCats, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
-import { daysInMonth, eur, eur0, monthKey, monthLabel, round2 } from "@/lib/format";
+import { daysInMonth, eur, eur0, monthKey, ofMonth, round2 } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { AllocateAlert } from "./Onboarding";
 import { Bar, Button, Panel, useToast } from "./ui";
 import { MascotSays, type Mood } from "./Mascot";
+import { SafetyTip } from "./SafetyTip";
 
 export function Home({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
@@ -85,7 +86,16 @@ export function Home({ data, month }: { data: AppData; month: string }) {
 
         <MascotSays mood={mood}>{line}</MascotSays>
 
-        {Math.abs(rest) >= 0.01 && <AllocateAlert value={rest} />}
+        {Math.abs(rest) >= 0.01 && (
+          <AllocateAlert
+            value={rest}
+            onSave={() => {
+              updateData((d) => void (d.savingsMonthly = round2(d.savingsMonthly + rest)));
+              toast(`Épargne mensuelle : ${eur(round2(data.savingsMonthly + rest))}. Chaque euro a sa mission !`);
+            }}
+            onAdjust={() => (window.location.hash = "reglages")}
+          />
+        )}
 
         <Panel title="Enveloppes">
           {envs.length === 0 && <p className="text-ink-2">Aucune enveloppe. Crée-en une dans les réglages.</p>}
@@ -152,7 +162,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                 {m.savingsDone > 0 ? "✓" : ""}
               </button>
               <span className="flex-1">
-                Épargne de {monthLabel(month)}
+                Épargne {ofMonth(month)}
                 <small className="block text-[0.8rem] text-ink-2">{m.savingsDone > 0 ? "Versée" : "Coche quand le virement est fait"}</small>
               </span>
               <b className="font-display tabular">{eur(m.savingsDone || data.savingsMonthly)}</b>
@@ -178,6 +188,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           ))}
           {data.goals.length === 0 && <p className="text-sm text-ink-2">Ajoute un objectif dans les réglages pour suivre ta progression.</p>}
         </Panel>
+        <SafetyTip data={data} />
         <QuickTip data={data} month={month} />
       </div>
     </div>

@@ -76,11 +76,12 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
               <i className="inline-block h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: e.cat === SAVINGS ? "var(--save)" : colorFor(data, e.cat) }} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{e.label || where(data, e.cat)}</span>
-                <small className="block text-[0.8rem] text-ink-2">
-                  {e.extra ? "En plus · " : e.amount < 0 ? "Remboursement · " : ""}
-                  {where(data, e.cat)}
-                  {e.imported && " · relevé"}
-                </small>
+                {/* Sans libellé, le nom de l’enveloppe est déjà le titre : on ne le répète pas. */}
+                {(e.label || e.extra || e.amount < 0 || e.imported) && (
+                  <small className="block text-[0.8rem] text-ink-2">
+                    {[e.extra ? "En plus" : e.amount < 0 ? "Remboursement" : "", e.label ? where(data, e.cat) : "", e.imported ? "relevé" : ""].filter(Boolean).join(" · ")}
+                  </small>
+                )}
               </span>
               <span className={`font-display font-semibold tabular ${e.extra || e.amount < 0 ? "text-save" : ""}`}>
                 {e.extra || e.amount < 0 ? `+${eur(Math.abs(e.amount))}` : eur(e.amount)}

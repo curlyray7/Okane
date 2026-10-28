@@ -2,7 +2,7 @@
 
 import type { AppData } from "@/lib/types";
 import { colorFor, envelopeCats, fixedCats, getMonth, monthReview, savedInMonth, sumBy } from "@/lib/calc";
-import { addMonths, eur, monthKey, monthLabel, monthShort } from "@/lib/format";
+import { addMonths, eur, monthKey, monthLabel, monthShort, ofMonth } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { Alert, Button, Panel, useToast } from "./ui";
 import { MascotSays } from "./Mascot";
@@ -12,7 +12,9 @@ export function Review({ data, month }: { data: AppData; month: string }) {
   const r = monthReview(data, month);
   const m = getMonth(data, month);
   const now = monthKey();
-  const ended = month < now || (month === now && new Date().getDate() >= 25);
+  const past = month < now;
+  // Le versement du non-dépensé est proposé dès le 25 ; le mois n’est « bouclé » qu’une fois terminé.
+  const ended = past || (month === now && new Date().getDate() >= 25);
 
   const setBonus = (amount: number) =>
     updateData((d) => {
@@ -24,12 +26,12 @@ export function Review({ data, month }: { data: AppData; month: string }) {
   return (
     <div className="grid items-start gap-4 min-[860px]:grid-cols-[1.1fr_.9fr]">
       <div className="grid gap-4">
-        {r.overruns.length === 0 && ended ? (
+        {r.overruns.length === 0 && past ? (
           <MascotSays mood="fierte">
             <span className="inline-block first-letter:uppercase">{monthLabel(month)}</span> bouclé sans aucun dépassement. Sugoi !
           </MascotSays>
         ) : r.overruns.length === 0 ? (
-          <Alert tone="ok">Aucune enveloppe dépassée en {monthLabel(month)}. Yosh !</Alert>
+          <Alert tone="ok">Aucune enveloppe dépassée {month === now ? "pour l’instant" : `en ${monthLabel(month)}`}. Yosh !</Alert>
         ) : (
           <Alert tone="bad">
             {r.overruns.length === 1 ? "Enveloppe dépassée : " : `${r.overruns.length} enveloppes dépassées : `}
@@ -75,7 +77,7 @@ export function Review({ data, month }: { data: AppData; month: string }) {
           <Alert tone="warn">L’épargne du mois ({eur(data.savingsMonthly)}) n’est pas encore cochée comme versée. Tu peux la cocher sur l’accueil.</Alert>
         )}
 
-        <Panel title={`Bilan de ${monthLabel(month)}`}>
+        <Panel title={`Bilan ${ofMonth(month)}`}>
           <Row label="Revenus prévus" value={eur(r.income)} />
           {r.extra > 0 && <Row label="Rentrées en plus" value={`+ ${eur(r.extra)}`} />}
           <Row label="Charges fixes" value={`− ${eur(r.fixed)}`} />

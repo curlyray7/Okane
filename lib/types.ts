@@ -83,4 +83,6 @@ export interface AppData {
   rules?: ImportRule[];
   /** Lignes de relevé déjà écartées à l'import, pour ne pas les reproposer */
   ignoredImports?: string[];
+  /** Date ISO du dernier téléchargement de sauvegarde */
+  lastBackupAt?: string;
 }

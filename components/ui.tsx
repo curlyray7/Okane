@@ -52,13 +52,21 @@ export function Panel({
   );
 }
 
-export function Bar({ value, color, height = 12 }: { value: number; color: string; height?: number }) {
+/** Jauge. `marker` (0 à 1) : repère « aujourd’hui », la part de la période déjà écoulée. */
+export function Bar({ value, color, height = 12, marker }: { value: number; color: string; height?: number; marker?: number }) {
   return (
-    <div className="w-full overflow-hidden rounded-full border-2 border-ink bg-track" style={{ height }}>
-      <div
-        className="h-full rounded-full"
-        style={{ width: `${Math.max(0, Math.min(100, value * 100))}%`, background: color }}
-      />
+    <div className="relative">
+      <div className="w-full overflow-hidden rounded-full border-2 border-ink bg-track" style={{ height }}>
+        <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, value * 100))}%`, background: color }} />
+      </div>
+      {marker !== undefined && marker > 0 && marker < 1 && (
+        <div
+          className="absolute -top-1 -bottom-1 w-[3px] -translate-x-1/2 rounded-full border border-surface bg-ink"
+          style={{ left: `${marker * 100}%` }}
+          title="Aujourd’hui : part de la période écoulée"
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 }

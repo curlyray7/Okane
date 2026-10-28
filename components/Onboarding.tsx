@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { setData } from "@/lib/store";
-import { eur, eur0, monthKey, round2 } from "@/lib/format";
+import { eur, eur0, round2 } from "@/lib/format";
 import { Alert, Button, MoneyInput } from "./ui";
-import { GoalsEditor, RowsEditor, newGoalRow } from "./editors";
+import { GoalsEditor, PaydayField, RowsEditor, newGoalRow } from "./editors";
+import { currentPeriod, paydayOf } from "@/lib/period";
 import { Draft, draftToData, draftTotals, emptyDraft, validateDraft } from "./draft";
 import { Mascot, MascotSays } from "./Mascot";
 
@@ -38,7 +39,7 @@ export function Onboarding() {
     setData({
       version: 1,
       createdAt: new Date().toISOString(),
-      startMonth: monthKey(),
+      startMonth: currentPeriod(paydayOf(draftToData(draft))),
       months: {},
       ...draftToData(draft),
     });
@@ -85,6 +86,7 @@ export function Onboarding() {
       {step === "incomes" && (
         <StepFrame title="Ce que tu gagnes chaque mois" hint="Salaire net, aides, pension… Uniquement ce qui revient tous les mois.">
           <RowsEditor rows={draft.incomes} onChange={(incomes) => patch({ incomes })} namePlaceholder="ex. Salaire" addLabel="Ajouter un revenu" />
+          <PaydayField value={draft.payday} onChange={(payday) => patch({ payday })} />
           <Total label="Total des revenus" value={totals.income} />
         </StepFrame>
       )}

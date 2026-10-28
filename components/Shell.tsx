@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { AppData } from "@/lib/types";
-import { addMonths, monthKey, monthLabel } from "@/lib/format";
+import { addMonths } from "@/lib/format";
+import { currentPeriod, paydayOf, periodProgress, periodTitle } from "@/lib/period";
 import { Home } from "./Home";
 import { Expenses } from "./Expenses";
 import { Review } from "./Review";
@@ -20,7 +21,11 @@ type Tab = (typeof TABS)[number]["id"];
 
 export function Shell({ data }: { data: AppData }) {
   const [tab, setTab] = useState<Tab>("accueil");
-  const [month, setMonth] = useState(monthKey());
+  const payday = paydayOf(data);
+  const now = currentPeriod(payday);
+  const [month, setMonth] = useState(now);
+  // Nouveau jour de paie : on revient sur la période en cours, dont la clé a pu changer.
+  useEffect(() => setMonth(currentPeriod(payday)), [payday]);
   const [sheet, setSheet] = useState<{ open: boolean; id?: string }>({ open: false });
   const [fabHidden, setFabHidden] = useState(false);
 
@@ -60,13 +65,20 @@ export function Shell({ data }: { data: AppData }) {
       <div className="mx-auto max-w-[1040px] px-4 pt-4 pb-40">
         {tab !== "reglages" && (
           <header className="mb-5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5">
-              <MonthBtn label="Mois précédent" disabled={!canPrev} onClick={() => setMonth(addMonths(month, -1))}>‹</MonthBtn>
-              <h1 className="min-w-[9ch] text-center font-manga text-[2rem] leading-none capitalize">{monthLabel(month)}</h1>
-              <MonthBtn label="Mois suivant" onClick={() => setMonth(addMonths(month, 1))}>›</MonthBtn>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <MonthBtn label="Période précédente" disabled={!canPrev} onClick={() => setMonth(addMonths(month, -1))}>‹</MonthBtn>
+              <div className="min-w-[9ch] text-center">
+                <h1 className={`font-manga leading-none whitespace-nowrap capitalize ${payday > 1 ? "text-[1.35rem]" : "text-[2rem]"}`}>{periodTitle(month, payday)}</h1>
+                {payday > 1 && (
+                  <p className="mt-0.5 text-[0.75rem] font-semibold text-ink-2">
+                    {month === now ? `Jour ${periodProgress(month, payday).day} sur ${periodProgress(month, payday).total} · ` : ""}paie le {payday}
+                  </p>
+                )}
+              </div>
+              <MonthBtn label="Période suivante" onClick={() => setMonth(addMonths(month, 1))}>›</MonthBtn>
             </div>
-            {month !== monthKey() && (
-              <button type="button" className="text-sm font-semibold text-accent" onClick={() => setMonth(monthKey())}>
+            {month !== now && (
+              <button type="button" className="text-sm font-semibold whitespace-nowrap text-accent" onClick={() => setMonth(now)}>
                 Aujourd’hui
               </button>
             )}

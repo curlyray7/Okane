@@ -5,6 +5,7 @@ import { SAVINGS, type AppData } from "@/lib/types";
 import { colorFor, envelopeCats } from "@/lib/calc";
 import { dayLabel, eur, isoDate, round2, uid } from "@/lib/format";
 import { updateData } from "@/lib/store";
+import { paydayOf, periodKeyOf } from "@/lib/period";
 import { BankLine, CreditReason, IGNORE, Reason, alreadyImported, keywordFor, learnRule, placesIn, prettyLabel, readStatement, suggest, suggestCredit } from "@/lib/bankImport";
 import { Alert, Button, useToast } from "./ui";
 import { MascotSays } from "./Mascot";
@@ -31,6 +32,7 @@ const REASON: Record<Reason | CreditReason, string> = {
 export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => void }) {
   const toast = useToast();
   const envs = envelopeCats(data);
+  const payday = paydayOf(data);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [known, setKnown] = useState(0);
   const [error, setError] = useState("");
@@ -95,10 +97,10 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
         } else if (!r.credit && r.target === SAVINGS) {
           // Virement vers l’épargne : pas une dépense, il confirme l’épargne du mois.
           d.ignoredImports.push(r.ref);
-          const key = r.date.slice(0, 7);
+          const key = periodKeyOf(r.date, payday);
           savedByMonth[key] = round2((savedByMonth[key] ?? 0) + r.amount);
         } else {
-          const key = r.date.slice(0, 7);
+          const key = periodKeyOf(r.date, payday);
           const m = (d.months[key] ??= { expenses: [], savingsDone: 0, bonus: 0 });
           const base = { id: uid(), date: r.date, label: prettyLabel(r.label), createdAt: Date.now(), importId: r.ref };
           const [kind, id] = r.target.split(":");

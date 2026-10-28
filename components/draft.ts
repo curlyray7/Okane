@@ -10,6 +10,8 @@ export interface Draft {
   savingsMonthly: string;
   margin: string;
   initialSavings: string;
+  /** Jour de paie, vide = le 1er */
+  payday: string;
 }
 
 const num = (s: string) => parseAmount(s) ?? 0;
@@ -36,6 +38,8 @@ export function validateDraft(d: Draft, step?: "incomes" | "fixed" | "envelopes"
     }
   };
   if (!step || step === "incomes") {
+    const p = d.payday.trim();
+    if (p !== "" && !(/^\d{1,2}$/.test(p) && Number(p) >= 1 && Number(p) <= 31)) errs.push("Le jour de paie doit être entre 1 et 31.");
     checkRows(d.incomes, "revenus");
     if (draftTotals(d).income <= 0) errs.push("Ajoute au moins un revenu.");
   }
@@ -78,6 +82,7 @@ export function draftToData(d: Draft, base?: AppData): Omit<AppData, "months" | 
     categories: [...cat(d.fixed, "fixed"), ...cat(d.envelopes, "envelope")],
     goals,
     savingsMonthly: num(d.savingsMonthly),
+    payday: Number(d.payday) > 1 ? Number(d.payday) : undefined,
     margin: num(d.margin),
     initialSavings: num(d.initialSavings),
   };
@@ -92,6 +97,7 @@ export function dataToDraft(a: AppData): Draft {
     envelopes: rows("envelope"),
     goals: a.goals.map((g) => ({ id: g.id, name: g.name, target: toStr(g.target), deadline: g.deadline })),
     savingsMonthly: toStr(a.savingsMonthly),
+    payday: a.payday && a.payday > 1 ? String(a.payday) : "",
     margin: toStr(a.margin),
     initialSavings: toStr(a.initialSavings),
   };
@@ -103,6 +109,7 @@ export const emptyDraft = (): Draft => ({
   envelopes: [{ id: uid(), name: "", amount: "" }],
   goals: [],
   savingsMonthly: "",
+  payday: "",
   margin: "",
   initialSavings: "",
 });

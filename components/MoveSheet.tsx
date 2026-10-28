@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AppData } from "@/lib/types";
 import { categoryName, colorFor, envelopeBudgets, envelopeCats, getMonth, spentByCategory } from "@/lib/calc";
-import { eur, monthLabel, parseAmount, round2, uid } from "@/lib/format";
+import { eur, parseAmount, round2, uid } from "@/lib/format";
+import { inPeriod, paydayOf } from "@/lib/period";
 import { updateData } from "@/lib/store";
 import { Button, useToast } from "./ui";
 
@@ -74,7 +75,7 @@ export function MoveSheet({ data, month, to: initialTo, amount: initialAmount, o
         <h2 id="move-title" className="font-manga text-[1.7rem] leading-none">
           Déplacer de l’argent
         </h2>
-        <p className="mt-1 text-sm text-ink-2">Pour {monthLabel(month)} seulement : ton budget prévu des autres mois ne change pas.</p>
+        <p className="mt-1 text-sm text-ink-2">Pour {inPeriod(month, paydayOf(data)).replace(/^en /, "")} seulement : ton budget prévu des autres périodes ne change pas.</p>
 
         <p className="mt-4 text-sm text-ink-2">Vers</p>
         <div className="mt-1 flex flex-wrap gap-2" role="group" aria-label="Vers">
@@ -144,7 +145,7 @@ export function MoveSheet({ data, month, to: initialTo, amount: initialAmount, o
 
         {moves.length > 0 && (
           <div className="mt-5 border-t-2 border-line pt-3">
-            <p className="text-sm font-semibold">Déjà déplacé ce mois-ci</p>
+            <p className="text-sm font-semibold">Déjà déplacé sur cette période</p>
             {moves.map((mv) => (
               <div key={mv.id} className="flex items-center gap-2 py-1.5 text-[0.88rem]">
                 <span className="min-w-0 flex-1 truncate">

@@ -2,7 +2,8 @@
 
 import type { AppData } from "@/lib/types";
 import { colorFor, envelopeCats, fixedCats, getMonth, monthReview, savedInMonth, sumBy } from "@/lib/calc";
-import { addMonths, eur, monthKey, monthLabel, monthShort, ofMonth } from "@/lib/format";
+import { addMonths, eur, monthLabel, monthShort } from "@/lib/format";
+import { currentPeriod, inPeriod, ofPeriod, paydayOf, periodProgress } from "@/lib/period";
 import { updateData } from "@/lib/store";
 import { Alert, Button, Panel, useToast } from "./ui";
 import { MascotSays } from "./Mascot";
@@ -11,10 +12,11 @@ export function Review({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
   const r = monthReview(data, month);
   const m = getMonth(data, month);
-  const now = monthKey();
+  const payday = paydayOf(data);
+  const now = currentPeriod(payday);
   const past = month < now;
-  // Le versement du non-dépensé est proposé dès le 25 ; le mois n’est « bouclé » qu’une fois terminé.
-  const ended = past || (month === now && new Date().getDate() >= 25);
+  // Le versement du non-dépensé est proposé la dernière semaine de la période ; elle n’est « bouclée » qu’une fois terminée.
+  const ended = past || (month === now && periodProgress(month, payday).left <= 7);
 
   const setBonus = (amount: number) =>
     updateData((d) => {
@@ -28,10 +30,16 @@ export function Review({ data, month }: { data: AppData; month: string }) {
       <div className="grid gap-4">
         {r.overruns.length === 0 && past ? (
           <MascotSays mood="fierte">
-            <span className="inline-block first-letter:uppercase">{monthLabel(month)}</span> bouclé sans aucun dépassement. Sugoi !
+            {payday > 1 ? (
+              `Période ${ofPeriod(month, payday)} bouclée sans aucun dépassement. Sugoi !`
+            ) : (
+              <>
+                <span className="inline-block first-letter:uppercase">{monthLabel(month)}</span> bouclé sans aucun dépassement. Sugoi !
+              </>
+            )}
           </MascotSays>
         ) : r.overruns.length === 0 ? (
-          <Alert tone="ok">Aucune enveloppe dépassée {month === now ? "pour l’instant" : `en ${monthLabel(month)}`}. Yosh !</Alert>
+          <Alert tone="ok">Aucune enveloppe dépassée {month === now ? "pour l’instant" : inPeriod(month, payday)}. Yosh !</Alert>
         ) : (
           <Alert tone="bad">
             {r.overruns.length === 1 ? "Enveloppe dépassée : " : `${r.overruns.length} enveloppes dépassées : `}
@@ -74,10 +82,10 @@ export function Review({ data, month }: { data: AppData; month: string }) {
         ) : null}
 
         {data.savingsMonthly > 0 && m.savingsDone === 0 && (
-          <Alert tone="warn">L’épargne du mois ({eur(data.savingsMonthly)}) n’est pas encore cochée comme versée. Tu peux la cocher sur l’accueil.</Alert>
+          <Alert tone="warn">L’épargne {payday > 1 ? "de la période" : "du mois"} ({eur(data.savingsMonthly)}) n’est pas encore cochée comme versée. Tu peux la cocher sur l’accueil.</Alert>
         )}
 
-        <Panel title={`Bilan ${ofMonth(month)}`}>
+        <Panel title={`Bilan ${ofPeriod(month, payday)}`}>
           <Row label="Revenus prévus" value={eur(r.income)} />
           {r.extra > 0 && <Row label="Rentrées en plus" value={`+ ${eur(r.extra)}`} />}
           <Row label="Charges fixes" value={`− ${eur(r.fixed)}`} />
@@ -132,7 +140,7 @@ function History({ data, month }: { data: AppData; month: string }) {
   const keys = Array.from({ length: 6 }, (_, i) => addMonths(month, i - 5));
   const rows = keys.map((k) => {
     const m = data.months[k];
-    return { k, has: k >= data.startMonth && k <= monthKey(), spent: fixed + Math.max(0, sumBy(m?.expenses ?? [], (e) => e.amount)), saved: m ? savedInMonth(m) : 0 };
+    return { k, has: k >= data.startMonth && k <= currentPeriod(paydayOf(data)), spent: fixed + Math.max(0, sumBy(m?.expenses ?? [], (e) => e.amount)), saved: m ? savedInMonth(m) : 0 };
   });
   const max = Math.max(1, ...rows.filter((r) => r.has).map((r) => Math.max(r.spent, r.saved)));
   const W = 600;

@@ -2,7 +2,8 @@
 
 import { SAVINGS, type AppData } from "@/lib/types";
 import { categoryName, colorFor, getMonth, sumBy } from "@/lib/calc";
-import { dayLabel, eur, monthLabel } from "@/lib/format";
+import { dayLabel, eur } from "@/lib/format";
+import { inPeriod, paydayOf } from "@/lib/period";
 import { Button, Panel } from "./ui";
 
 interface Line {
@@ -32,7 +33,7 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
   if (list.length === 0)
     return (
       <Panel className="py-10 text-center">
-        <p className="text-ink-2">Aucune opération en {monthLabel(month)}.</p>
+        <p className="text-ink-2">Aucune opération {inPeriod(month, paydayOf(data))}.</p>
         <div className="mt-5 flex flex-wrap justify-center gap-2.5">
           <Button variant="accent" onClick={onAdd}>
             Ajouter une dépense
@@ -51,7 +52,7 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
     <div className="mx-auto max-w-[640px]">
       <Panel className="mb-4">
         <div className="flex justify-between">
-          <span>Dépensé ce mois</span>
+          <span>Dépensé {paydayOf(data) > 1 ? "sur la période" : "ce mois"}</span>
           <b className="font-display tabular">{eur(spent)}</b>
         </div>
         {refunded > 0 && (

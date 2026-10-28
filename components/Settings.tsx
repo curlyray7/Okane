@@ -10,7 +10,8 @@ import { IGNORE } from "@/lib/bankImport";
 import { SAVINGS } from "@/lib/types";
 import { eur, round2 } from "@/lib/format";
 import { AllocateAlert } from "./Onboarding";
-import { GoalsEditor, RowsEditor } from "./editors";
+import { GoalsEditor, PaydayField, RowsEditor } from "./editors";
+import { paydayOf, rebucket } from "@/lib/period";
 import { Draft, dataToDraft, draftToData, draftTotals, validateDraft } from "./draft";
 import { Alert, Button, MoneyInput, Panel, useToast } from "./ui";
 import { Mascot } from "./Mascot";
@@ -28,10 +29,13 @@ export function Settings({ data }: { data: AppData }) {
     const errs = validateDraft(draft);
     setErrors(errs);
     if (errs.length) return;
-    const next = { ...data, ...draftToData(draft) };
+    const next = structuredClone({ ...data, ...draftToData(draft) });
+    // Nouveau jour de paie : chaque opération rejoint la période de sa date.
+    const moved = paydayOf(next) !== paydayOf(data);
+    if (moved) rebucket(next);
     const ok = setData(next);
     setDraft(dataToDraft(next));
-    toast(ok ? "Budget enregistré" : "Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué.");
+    toast(!ok ? "Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué." : moved ? "Budget enregistré, opérations rangées dans tes nouvelles périodes" : "Budget enregistré");
   };
 
   const [persisted, setPersisted] = useState<boolean | null>(null);
@@ -81,6 +85,7 @@ export function Settings({ data }: { data: AppData }) {
 
       <Panel title="Revenus mensuels" action={<Sum v={totals.income} />}>
         <RowsEditor rows={draft.incomes} onChange={(incomes) => patch({ incomes })} namePlaceholder="ex. Salaire" addLabel="Ajouter un revenu" />
+        <PaydayField value={draft.payday} onChange={(payday) => patch({ payday })} />
       </Panel>
       <Panel title="Charges fixes" action={<Sum v={totals.fixed} />}>
         <RowsEditor rows={draft.fixed} onChange={(fixed) => patch({ fixed })} namePlaceholder="ex. Loyer" addLabel="Ajouter une charge" />

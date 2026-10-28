@@ -18,6 +18,26 @@ export interface GoalRow {
 }
 
 export const newRow = (): Row => ({ id: uid(), name: "", amount: "" });
+
+/** « Je reçois ma paie le [26] du mois » : découpe le budget du jour de paie à la veille du suivant. */
+export function PaydayField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="mt-4 flex flex-wrap items-center gap-2 text-[0.95rem]">
+      Je reçois ma paie le
+      <TextInput
+        aria-label="Jour de paie"
+        inputMode="numeric"
+        placeholder="1"
+        maxLength={2}
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, ""))}
+        className="!w-16 text-center"
+      />
+      du mois
+      <small className="block w-full text-[0.8rem] text-ink-2">Ton budget ira du jour de paie à la veille de la suivante (ex. du 26 au 25). Laisse vide si c’est le 1er.</small>
+    </label>
+  );
+}
 export const newGoalRow = (): GoalRow => ({ id: uid(), name: "", target: "", deadline: "" });
 
 export function RowsEditor({

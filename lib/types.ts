@@ -97,4 +97,6 @@ export interface AppData {
   ignoredImports?: string[];
   /** Date ISO du dernier téléchargement de sauvegarde */
   lastBackupAt?: string;
+  /** Jour de paie (1 à 31) : les périodes vont de ce jour à la veille du suivant. 1 ou absent = mois calendaire */
+  payday?: number;
 }

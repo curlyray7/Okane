@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { SAVINGS, type AppData } from "@/lib/types";
 import { colorFor, envelopeBudgets, envelopeCats, getMonth, spentByCategory } from "@/lib/calc";
-import { daysInMonth, eur, isoDate, monthKey, monthLabel, parseAmount, round2, uid } from "@/lib/format";
+import { eur, isoDate, parseAmount, round2, uid } from "@/lib/format";
+import { currentPeriod, inPeriod, paydayOf, periodKeyOf, periodRange } from "@/lib/period";
 import { updateData } from "@/lib/store";
 import { Button, TextInput, useToast } from "./ui";
 
@@ -16,11 +17,12 @@ const TITLES: Record<Kind, [string, string]> = {
   extra: ["Nouvelle rentrée", "Modifier la rentrée"],
 };
 
-function defaultDate(month: string) {
-  const now = monthKey();
+/** Aujourd’hui dans la période en cours, sinon son dernier jour (passée) ou son premier (à venir). */
+function defaultDate(month: string, payday: number) {
+  const now = currentPeriod(payday);
   if (month === now) return isoDate();
-  if (month < now) return `${month}-${String(daysInMonth(month)).padStart(2, "0")}`;
-  return `${month}-01`;
+  const { start, end } = periodRange(month, payday);
+  return month < now ? end : start;
 }
 
 export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppData; month: string; expenseId?: string; onClose: () => void }) {
@@ -34,7 +36,8 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
   const [amount, setAmount] = useState(existing ? String(Math.abs(existing.amount)).replace(".", ",") : "");
   const [cat, setCat] = useState(existingExtra?.target ?? existingExpense?.categoryId ?? envs[0]?.id ?? "");
   const [label, setLabel] = useState(existing?.label ?? "");
-  const [date, setDate] = useState(existing?.date ?? defaultDate(month));
+  const payday = paydayOf(data);
+  const [date, setDate] = useState(existing?.date ?? defaultDate(month, payday));
   const today = isoDate();
   const yesterday = isoDate(new Date(Date.now() - 86400000));
   const [error, setError] = useState("");
@@ -60,7 +63,7 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
     if (a === null || a <= 0) return setError("Indique un montant supérieur à 0.");
     if (!cat) return setError(kind === "extra" ? "Choisis où va cet argent." : "Choisis une enveloppe.");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return setError("Choisis une date.");
-    const key = date.slice(0, 7);
+    const key = periodKeyOf(date, payday);
     let left = 0;
     const ok = updateData((d) => {
       // Une modification peut changer de sorte ou de mois : on retire l’ancienne ligne et on la recrée au bon endroit.
@@ -84,7 +87,7 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
     });
     if (!ok) return setError("Impossible d’enregistrer : le stockage du navigateur est plein ou bloqué.");
     const name = cat === SAVINGS ? "Épargne" : (envs.find((c) => c.id === cat)?.name ?? "");
-    if (key !== month) toast(`Noté en ${monthLabel(key)}`);
+    if (key !== month) toast(payday > 1 ? `Noté dans la période ${inPeriod(key, payday)}` : `Noté ${inPeriod(key, payday)}`);
     else if (existing) toast("Modification enregistrée");
     else if (cat === SAVINGS) toast(`${eur(a)} ajoutés à ton épargne. Sugoi !`);
     else toast(left < 0 ? `${name} : dépassée de ${eur(-left)}` : `${name} : ${eur(left)} restants`);

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { AppData } from "@/lib/types";
 import { colorFor, envelopeBudgets, envelopeCats, refundsByCategory, rolledOver, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
-import { daysInMonth, eur, eur0, monthKey, ofMonth, round2 } from "@/lib/format";
+import { eur, eur0, round2 } from "@/lib/format";
+import { currentPeriod, ofPeriod, paydayOf, periodEndLabel, periodProgress } from "@/lib/period";
 import { updateData } from "@/lib/store";
 import { AllocateAlert } from "./Onboarding";
 import { Bar, Button, Panel, useToast } from "./ui";
@@ -24,12 +25,14 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const budget = sumBy(envs, (c) => budgets[c.id]);
   const used = sumBy(envs, (c) => spent[c.id] ?? 0);
   const available = budget - used;
-  const now = monthKey();
-  const progress = month === now ? (new Date().getDate() - 0.5) / daysInMonth(month) : month < now ? 1 : 0;
+  const payday = paydayOf(data);
+  const now = currentPeriod(payday);
+  const period = periodProgress(month, payday);
+  const progress = month === now ? (period.day - 0.5) / period.total : month < now ? 1 : 0;
   // Ce qu’on peut dépenser par jour d’ici la fin du mois, aujourd’hui compris.
-  const daysLeft = month === now ? daysInMonth(month) - new Date().getDate() + 1 : 0;
+  const daysLeft = month === now ? period.left : 0;
   const perDay = daysLeft > 0 && available > 0 ? round2(available / daysLeft) : 0;
-  const lastDay = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" }).format(new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0));
+  const lastDay = periodEndLabel(month, payday);
   const scale = Math.max(budget, used, 1);
   const fixed = fixedCats(data);
   const m = getMonth(data, month);
@@ -49,7 +52,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
         ? ["victoire", `Sugoi ! Objectif « ${doneGoal.goal.name} » atteint.`]
         : m.savingsDone > 0
           ? ["contente", "Épargne versée, yosh ! Continue comme ça."]
-          : ["neutre", `Encore ${eur(available)} à dépenser ce mois-ci. Ganbatte !`];
+          : ["neutre", month === now ? `Encore ${eur(available)} à dépenser d’ici le ${lastDay}. Ganbatte !` : `${eur(available)} disponibles sur cette période. Ganbatte !`];
 
   const toggleSavings = () => {
     updateData((d) => {
@@ -91,7 +94,6 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                   </div>
                 );
               })}
-            {progress > 0 && progress < 1 && <div className="absolute -top-1.5 -bottom-1.5 w-[3px] rounded bg-on-hero" style={{ left: `${progress * 100}%` }} title="Aujourd’hui" />}
           </div>
           <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[0.82rem] text-on-hero/80">
             {envs
@@ -129,12 +131,21 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           }
         >
           {envs.length === 0 && <p className="text-ink-2">Aucune enveloppe. Crée-en une dans les réglages.</p>}
+          {month === now && progress > 0 && progress < 1 && envs.length > 0 && (
+            <p className="mb-1 flex items-center gap-2 text-[0.8rem] text-ink-2">
+              <span className="inline-block h-3.5 w-[3px] flex-none rounded-full bg-ink" aria-hidden="true" />
+              Aujourd’hui. Si la jauge dépasse ce trait, tu dépenses plus vite que prévu.
+            </p>
+          )}
           {envs.map((c) => {
             const s = spent[c.id] ?? 0;
             const st = envelopeStatus(c, s, budgets[c.id]);
+            // Rythme : part du budget dépensée nettement au-dessus de la part de période écoulée.
+            const showPace = month === now && progress > 0 && progress < 1 && budgets[c.id] > 0;
+            const fast = showPace && st.level === "ok" && st.ratio - progress > 0.15;
             const changed = Math.abs(budgets[c.id] - c.budget) >= 0.01;
             const carried = rolledOver(data, month, c);
-            const col = st.level === "over" ? "var(--over)" : st.level === "near" ? "var(--warn)" : colorFor(data, c.id);
+            const col = st.level === "over" ? "var(--over)" : st.level === "near" || fast ? "var(--warn)" : colorFor(data, c.id);
             return (
               <div key={c.id} className="border-b border-line py-3 last:border-b-0">
                 <div className="flex items-baseline justify-between gap-3">
@@ -152,7 +163,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                   </span>
                 </div>
                 <div className="mt-1.5">
-                  <Bar value={st.ratio} color={col} />
+                  <Bar value={st.ratio} color={col} marker={showPace ? progress : undefined} />
                 </div>
                 <div className="mt-1 flex justify-between text-[0.82rem] text-ink-2">
                   <span>{eur(Math.max(0, s))} dépensés</span>
@@ -161,13 +172,18 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                     {Math.abs(carried) < 0.01 && changed && <span className={budgets[c.id] > c.budget ? "text-save" : ""}> (prévu {eur(c.budget)})</span>}
                   </span>
                 </div>
+                {fast && (
+                  <p className="mt-0.5 text-[0.8rem] font-semibold text-warn">
+                    Rythme rapide : {Math.round(st.ratio * 100)} % dépensés pour {Math.round(progress * 100)} % de la période
+                  </p>
+                )}
                 {(refunds[c.id] ?? 0) > 0 && (
-                  <p className="mt-0.5 text-[0.8rem] text-save">↩ {eur(refunds[c.id])} remboursés ce mois-ci, ils reviennent dans l’enveloppe</p>
+                  <p className="mt-0.5 text-[0.8rem] text-save">↩ {eur(refunds[c.id])} remboursés, ils reviennent dans l’enveloppe</p>
                 )}
                 {Math.abs(carried) >= 0.01 && (
                   <p className={`mt-0.5 text-[0.8rem] ${carried > 0 ? "text-save" : "text-over"}`}>
                     ↻ {carried > 0 ? "+" : "−"}
-                    {eur(Math.abs(carried))} {carried > 0 ? "gardés" : "à rattraper"} du mois dernier
+                    {eur(Math.abs(carried))} {carried > 0 ? "gardés" : "à rattraper"} {payday > 1 ? "de la période précédente" : "du mois dernier"}
                   </p>
                 )}
                 {st.left < 0 && envs.length >= 2 && (
@@ -212,7 +228,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                 {m.savingsDone > 0 ? "✓" : ""}
               </button>
               <span className="flex-1">
-                Épargne {ofMonth(month)}
+                Épargne {payday > 1 && month === now ? "de cette période" : ofPeriod(month, payday)}
                 <small className="block text-[0.8rem] text-ink-2">{m.savingsDone > 0 ? "Versée" : "Coche quand le virement est fait"}</small>
               </span>
               <b className="font-display tabular">{eur(m.savingsDone || data.savingsMonthly)}</b>

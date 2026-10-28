@@ -26,29 +26,56 @@ export function Button({
   );
 }
 
+/**
+ * Section posée sur le papier : un titre et son contenu, sans cadre (seule la case du haut de l’accueil est encadrée).
+ * `soft` : léger fond, pour un conseil ou une note à part.
+ */
 export function Panel({
   title,
   children,
   className = "",
   action,
   id,
+  soft = false,
 }: {
   title?: string;
   children: React.ReactNode;
   className?: string;
   action?: React.ReactNode;
   id?: string;
+  soft?: boolean;
 }) {
   return (
-    <section id={id} className={`rounded-[20px] border-2 border-ink bg-surface p-[18px] shadow-ink ${className}`}>
+    <section id={id} className={`${soft ? "rounded-2xl bg-surface-2 p-4" : ""} ${className}`}>
       {(title || action) && (
         <div className="mb-3 flex items-center justify-between gap-3">
-          {title && <h2 className="font-manga text-[1.6rem] leading-none">{title}</h2>}
+          {title && <h2 className="text-[1.12rem] leading-tight font-bold">{title}</h2>}
           {action}
         </div>
       )}
       {children}
     </section>
+  );
+}
+
+export type LifeState = "ok" | "fast" | "empty";
+
+/** Barre de vie : pleine en début de période, elle se vide à mesure qu’on dépense. `marker` = part qui devrait encore rester aujourd’hui. */
+export function LifeBar({ left, total, state, marker }: { left: number; total: number; state: LifeState; marker?: number }) {
+  const ratio = total > 0 ? Math.max(0, Math.min(1, left / total)) : 0;
+  const color = state === "empty" ? "var(--over)" : state === "fast" ? "var(--gauge-warn)" : "var(--pop)";
+  return (
+    <div className={`life ${state === "empty" ? "!bg-over-soft" : ""}`} style={{ ["--life" as string]: color }}>
+      <div className="life-fill" style={{ width: `${ratio * 100}%` }} />
+      {marker !== undefined && marker > 0 && marker < 1 && (
+        <div
+          className="absolute -top-[5px] -bottom-[5px] z-[1] w-[3px] rounded-full bg-ink"
+          style={{ left: `calc(${marker * 100}% - 1.5px)` }}
+          title="Aujourd’hui : la barre devrait encore être au moins jusqu’ici"
+          aria-hidden="true"
+        />
+      )}
+    </div>
   );
 }
 
@@ -80,7 +107,7 @@ const tones: Record<Tone, string> = {
 
 export function Alert({ tone, children, action }: { tone: Tone; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-current px-4 py-3 text-[0.93rem] ${tones[tone]}`}>
+    <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-xl px-3.5 py-2.5 text-[0.9rem] ${tones[tone]}`}>
       <div className="min-w-0 flex-[1_1_15rem]">{children}</div>
       {action}
     </div>
@@ -136,7 +163,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         role="status"
         aria-live="polite"
-        className={`pointer-events-none fixed left-1/2 z-50 -translate-x-1/2 rounded-xl border-2 border-ink bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent shadow-ink-sm transition-opacity ${msg ? "opacity-100" : "opacity-0"}`}
+        className={`pointer-events-none fixed left-1/2 z-50 -translate-x-1/2 rounded-xl border-2 border-ink bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition-opacity ${msg ? "opacity-100" : "opacity-0"}`}
         style={{ bottom: "calc(150px + env(safe-area-inset-bottom, 0px))" }}
       >
         {msg}

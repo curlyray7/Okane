@@ -107,8 +107,12 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
   };
 
   const income = kind !== "expense";
+  // Ce qu’il reste dans l’enveloppe choisie, avant cette dépense (sans compter la ligne qu’on modifie).
+  const leftNow = round2(
+    (envelopeBudgets(data, month)[cat] ?? 0) - (spentByCategory(data, month)[cat] ?? 0) + (existingExpense && existingExpense.categoryId === cat ? existingExpense.amount : 0),
+  );
   const chip = (active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.9rem] ${active ? "border-2 border-ink bg-accent text-on-accent shadow-ink-sm" : "border-2 border-line bg-surface-2"}`;
+    `inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.9rem] ${active ? "border-2 border-ink bg-accent text-on-accent" : "border-2 border-line bg-surface"}`;
 
   return (
     <div
@@ -126,7 +130,7 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
           save();
         }}
       >
-        <h2 id="sheet-title" className="font-manga text-[1.7rem] leading-none">
+        <h2 id="sheet-title" className="text-[1.25rem] leading-tight font-bold">
           {TITLES[kind][existing ? 1 : 0]}
         </h2>
         {envs.length === 0 ? (
@@ -180,7 +184,7 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
                     type="button"
                     aria-pressed={kind === k}
                     onClick={() => pick(k)}
-                    className={`rounded-xl border-2 px-3 py-2 text-left ${kind === k ? "border-ink bg-save-soft shadow-ink-sm" : "border-line"}`}
+                    className={`rounded-xl border-2 px-3 py-2 text-left ${kind === k ? "border-ink bg-save-soft" : "border-line"}`}
                   >
                     <b className="block text-[0.92rem]">{l}</b>
                     <small className="block text-[0.78rem] text-ink-2">{hint}</small>
@@ -189,7 +193,12 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
               </div>
             )}
 
-            <p className="text-sm text-ink-2">{kind === "expense" ? "Enveloppe" : kind === "refund" ? "Revient dans" : "Ajoutée à"}</p>
+            <p className="flex justify-between gap-3 text-sm text-ink-2">
+              <span>{kind === "expense" ? "Enveloppe" : kind === "refund" ? "Revient dans" : "Ajoutée à"}</span>
+              {kind === "expense" && cat && cat !== SAVINGS && (
+                <span className={leftNow < 0 ? "text-over" : ""}>Il reste {eur(leftNow)} dans {envs.find((c) => c.id === cat)?.name}</span>
+              )}
+            </p>
             <div className="mt-1 mb-4 flex flex-wrap gap-2" role="group" aria-label="Destination">
               {envs.map((c) => (
                 <button key={c.id} type="button" aria-pressed={c.id === cat} onClick={() => setCat(c.id)} className={chip(c.id === cat)}>

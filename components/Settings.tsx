@@ -74,14 +74,18 @@ export function Settings({ data }: { data: AppData }) {
   };
 
   return (
-    <div className="mx-auto grid max-w-[760px] gap-4">
-      <h1 className="font-manga text-[2rem] leading-none">Réglages</h1>
-      <p className="-mt-2 text-sm text-ink-2">Modifie ce que tu veux, puis enregistre en bas de l’écran.</p>
+    <div className="mx-auto grid max-w-[760px] gap-10">
+      <div className="-mb-4 grid gap-3">
+        <div>
+          <h1 className="text-[1.6rem] leading-tight font-bold">Réglages</h1>
+          <p className="text-sm text-ink-2">Modifie ce que tu veux, puis enregistre en bas de l’écran.</p>
+        </div>
       <AllocateAlert
         value={totals.toAllocate}
         onSave={() => patch({ savingsMonthly: String(round2(totals.savings + totals.toAllocate)).replace(".", ",") })}
         onAdjust={() => document.getElementById("reglages-enveloppes")?.scrollIntoView({ behavior: "smooth", block: "center" })}
       />
+      </div>
 
       <Panel title="Revenus mensuels" action={<Sum v={totals.income} />}>
         <RowsEditor rows={draft.incomes} onChange={(incomes) => patch({ incomes })} namePlaceholder="ex. Salaire" addLabel="Ajouter un revenu" />
@@ -126,7 +130,7 @@ export function Settings({ data }: { data: AppData }) {
       )}
 
       {dirty && (
-      <div className="sticky z-10 flex gap-2.5 rounded-2xl border-2 border-ink bg-surface p-3 shadow-ink" style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
+      <div className="sticky z-10 -my-4 flex gap-2.5 rounded-2xl border-2 border-ink bg-surface p-3" style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
         <Button variant="ghost" className="flex-1" onClick={() => { setDraft(initial); setErrors([]); }}>
           Annuler
         </Button>
@@ -209,7 +213,7 @@ export function Settings({ data }: { data: AppData }) {
           Effacer toutes mes données
         </Button>
       </Panel>
-      <Panel title="Fait par…">
+      <Panel title="Fait par…" soft>
         <div className="flex items-center gap-4">
           <Mascot mood="fierte" size={112} framed />
           <p className="text-[0.95rem]">

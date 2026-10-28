@@ -10,7 +10,7 @@ export function Mascot({ mood, size = 96, framed = false, className = "" }: { mo
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   return (
     <div
-      className={`relative flex-none ${framed ? "overflow-hidden rounded-full border-2 border-ink bg-accent-soft shadow-ink-sm" : ""} ${mood === "victoire" ? "power-up" : "float"} ${className}`}
+      className={`relative flex-none ${framed ? "overflow-hidden rounded-full border-2 border-line bg-accent-soft" : ""} ${mood === "victoire" ? "power-up" : "float"} ${className}`}
       style={{ width: size, height: size }}
     >
       {missing[mood] ? (
@@ -73,8 +73,8 @@ export function MascotSays({ mood, children, size = 92 }: { mood: Mood; children
   return (
     <div className="flex items-end gap-2">
       <Mascot mood={mood} size={size} framed />
-      <div className="relative mb-3 min-w-0 flex-1 rounded-2xl border-2 border-ink bg-surface px-3.5 py-2.5 text-[0.93rem] text-ink shadow-ink-sm">
-        <span className="absolute bottom-3 -left-[9px] h-4 w-4 rotate-45 border-b-2 border-l-2 border-ink bg-surface" aria-hidden="true" />
+      <div className="relative mb-3 min-w-0 flex-1 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-[0.92rem] text-ink">
+        <span className="absolute bottom-3 -left-[6px] h-3.5 w-3.5 rotate-45 bg-surface-2" aria-hidden="true" />
         <span className="relative">{children}</span>
       </div>
     </div>

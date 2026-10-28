@@ -4,16 +4,19 @@
   --bg: #f6f5fb;
   --surface: #ffffff;
   --surface-2: #efedf7;
-  --ink: #120d22;
+  --ink: #1a1330;
   --ink-2: #5d5873;
   --line: #dcd8ea;
-  --shade: #120d22;
+  --shade: #1a1330;
   --accent: #6d28d9;
   --accent-soft: #ede5ff;
   --pop: #06b6d4;
   --pop-soft: #d6f6fb;
-  --hero: #2a1065;
+  --hero: #1e1442;
   --on-hero: #ffffff;
+  --gauge-warn: #f59e0b;
+  --bubble: #ffffff;
+  --on-bubble: #1a1330;
   --save: #0e7a55;
   --save-soft: #dcf1e8;
   --warn: #9a6a00;
@@ -48,6 +51,7 @@
     --pop-soft: #0f3540;
     --hero: #1e1442;
     --on-hero: #ffffff;
+    --gauge-warn: #ffcf5c;
     --save: #4fd1a0;
     --save-soft: #16322a;
     --warn: #ffcf5c;
@@ -75,6 +79,7 @@
   --pop-soft: #0f3540;
   --hero: #1e1442;
   --on-hero: #ffffff;
+  --gauge-warn: #ffcf5c;
   --save: #4fd1a0;
   --save-soft: #16322a;
   --warn: #ffcf5c;
@@ -110,6 +115,9 @@
   --color-track: var(--track);
   --color-on-accent: var(--on-accent);
   --color-on-pop: var(--on-pop);
+  --color-gauge-warn: var(--gauge-warn);
+  --color-bubble: var(--bubble);
+  --color-on-bubble: var(--on-bubble);
   --font-sans: "Rubik", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-display: "Rubik", "Segoe UI", system-ui, sans-serif;
   --font-manga: "Bangers", "Rubik", system-ui, sans-serif;
@@ -160,6 +168,33 @@ body::before {
   border-radius: inherit;
   background: repeating-conic-gradient(from 0deg at 85% 15%, transparent 0deg 7deg, color-mix(in srgb, var(--pop) 14%, transparent) 7deg 9deg);
   mask-image: radial-gradient(circle at 85% 15%, transparent 12%, #000 70%);
+}
+/* Barre de vie d’une enveloppe, façon jauge de PV : parallélogramme encré, crans tous les 10 %, reflet en haut. */
+.life {
+  position: relative;
+  height: 16px;
+  transform: skewX(-14deg);
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--track);
+}
+.life-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--life) 55%, #fff) 0 30%, var(--life) 30%);
+  transition: width 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.life::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), color-mix(in srgb, var(--ink) 22%, transparent) calc(10% - 2px) 10%);
+}
+/* Mascotte en autocollant : contour blanc qui la détache du fond de la case. */
+.sticker {
+  filter: drop-shadow(2px 0 0 var(--on-hero)) drop-shadow(-2px 0 0 var(--on-hero)) drop-shadow(0 2px 0 var(--on-hero)) drop-shadow(0 -2px 0 var(--on-hero))
+    drop-shadow(3px 4px 0 var(--ink));
 }
 /* « Power up » : petit saut + aura cyan quand un cap est franchi. */
 /* Halo par drop-shadow : il suit la forme de l’élément (mascotte détourée) au lieu de dessiner un carré. */

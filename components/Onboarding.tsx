@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { setData } from "@/lib/store";
 import { eur, eur0, round2 } from "@/lib/format";
-import { Alert, Button, MoneyInput } from "./ui";
+import { Alert, Button, LifeBar, MoneyInput } from "./ui";
 import { GoalsEditor, PaydayField, RowsEditor, newGoalRow } from "./editors";
 import { currentPeriod, paydayOf } from "@/lib/period";
 import { Draft, draftToData, draftTotals, emptyDraft, validateDraft } from "./draft";
@@ -53,22 +53,21 @@ export function Onboarding() {
         <div className="mb-6">
           <div className="mb-2 flex justify-between text-sm text-ink-2">
             <button type="button" onClick={back} className="font-semibold">‹ Retour</button>
-            <span className="font-manga text-base text-accent">Niveau {idx} / {STEPS.length - 1}</span>
+            <span className="font-semibold text-accent">
+              Niveau {idx} sur {STEPS.length - 1}
+            </span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full border-2 border-ink bg-track">
-            <div className="h-full bg-pop transition-all" style={{ width: `${(idx / (STEPS.length - 1)) * 100}%` }} />
+          <div className="px-1">
+            <LifeBar left={idx} total={STEPS.length - 1} state="ok" />
           </div>
         </div>
       )}
 
       {step === "welcome" && (
-        <div className="pt-10">
+        <div className="pt-8">
           <Logo />
           <Hero />
-          <h1 className="mt-8 font-manga text-[3.2rem] leading-[0.95]">
-            Ton budget, niveau boss.
-          </h1>
-          <p className="mt-4 max-w-md text-lg text-ink-2">
+          <p className="mt-8 max-w-md text-lg text-ink-2">
             Chaque euro reçoit sa mission (charges, enveloppes, épargne), puis tu vois en un coup d’œil ce qu’il te
             reste. Prêt pour l’entraînement ?
           </p>
@@ -123,7 +122,7 @@ export function Onboarding() {
       {step === "goals" && (
         <StepFrame title="Tes objectifs d’épargne" hint="Facultatif. Ton épargne remplit tes objectifs dans l’ordre de priorité.">
           {draft.goals.length === 0 && precaution > 0 && (
-            <div className="mb-4 rounded-2xl border-2 border-ink bg-surface p-4 text-[0.95rem] shadow-ink-sm">
+            <div className="mb-6 rounded-2xl bg-surface-2 p-4 text-[0.95rem]">
               <p>
                 Un conseil : commence par une <b>épargne de précaution</b> de 3 mois de dépenses, soit {eur0(precaution)} avec ton
                 budget.
@@ -143,7 +142,7 @@ export function Onboarding() {
 
       {step === "recap" && (
         <StepFrame title="Ton budget mensuel" hint="Vérifie, puis lance-toi. Tout reste modifiable dans les réglages.">
-          <div className="rounded-2xl border-2 border-ink bg-surface p-4 shadow-ink-sm">
+          <div className="rounded-2xl bg-surface-2 px-4 py-3">
             <Line label="Revenus" value={totals.income} />
             <Line label="Charges fixes" value={-totals.fixed} />
             <Line label="Enveloppes" value={-totals.envelopes} />
@@ -151,7 +150,7 @@ export function Onboarding() {
             {totals.margin > 0 && <Line label="Marge de sécurité" value={-totals.margin} />}
             <div className="mt-2 flex justify-between border-t border-line pt-3 font-semibold">
               <span>Reste à répartir</span>
-              <span className="font-display tabular">{eur(totals.toAllocate)}</span>
+              <span className="tabular">{eur(totals.toAllocate)}</span>
             </div>
           </div>
           <div className="mt-4">
@@ -212,16 +211,18 @@ export function Logo() {
   );
 }
 
-/** Case de manga d’accueil : traits de vitesse et mascotte en pose de victoire. */
+/** Case de manga d’accueil, la même que sur l’accueil de l’app : le titre dedans, la mascotte qui sort du cadre. */
 function Hero() {
   return (
-    <div className="speed-lines mt-8 flex h-[170px] max-w-[420px] items-center justify-between overflow-hidden rounded-[24px] border-2 border-ink bg-hero px-6 shadow-ink">
-      <p className="font-manga text-[2.4rem] leading-[0.9] text-pop [text-shadow:3px_3px_0_var(--ink)]">
-        Gan-
-        <br />
-        batte&nbsp;<span className="text-on-hero">!</span>
-      </p>
-      <Mascot mood="victoire" size={140} />
+    <div className="relative mt-10 mr-1">
+      <div className="speed-lines overflow-hidden rounded-[6px] border-[3px] border-ink bg-hero px-5 pt-6 pb-6 text-on-hero shadow-ink">
+        <h1 className="relative z-[1] max-w-[62%] font-manga text-[clamp(2.6rem,11vw,3.4rem)] leading-[0.92] [text-shadow:3px_3px_0_var(--accent)]">
+          Ton budget, niveau boss.
+        </h1>
+      </div>
+      <div className="sticker pointer-events-none absolute -top-8 -right-2 z-[2]">
+        <Mascot mood="victoire" size={160} />
+      </div>
     </div>
   );
 }
@@ -250,18 +251,18 @@ function Field({ label, hint, children }: { label: string; hint: string; childre
 
 function Total({ label, value }: { label: string; value: number }) {
   return (
-    <div className="mt-6 flex justify-between rounded-2xl border-2 border-ink bg-surface p-4 shadow-ink-sm">
+    <div className="mt-6 flex justify-between rounded-xl bg-surface-2 px-4 py-3">
       <span>{label}</span>
-      <b className="font-display tabular">{eur(value)}</b>
+      <b className="tabular">{eur(value)}</b>
     </div>
   );
 }
 
 function Remaining({ value, final }: { value: number; final?: boolean }) {
   return (
-    <div className={`mt-6 flex justify-between rounded-2xl border-2 p-4 shadow-ink-sm ${value < 0 ? "border-over bg-over-soft text-over" : "border-ink bg-surface"}`}>
+    <div className={`mt-6 flex justify-between rounded-xl px-4 py-3 ${value < 0 ? "bg-over-soft text-over" : "bg-surface-2"}`}>
       <span>{final ? "Reste à répartir" : "Il reste"}</span>
-      <b className="font-display tabular">{eur(value)}</b>
+      <b className="tabular">{eur(value)}</b>
     </div>
   );
 }

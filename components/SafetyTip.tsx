@@ -30,7 +30,7 @@ export function SafetyTip({ data }: { data: AppData }) {
 
   if (tip === "ios")
     return (
-      <Panel title="Garde tes données">
+      <Panel title="Garde tes données" soft>
         <p className="text-[0.93rem]">
           Sur iPhone, ajoute Okane à ton écran d’accueil : bouton <b>Partager</b>, puis <b>Sur l’écran d’accueil</b>. Sinon, Safari peut effacer
           ton budget après 7 jours sans l’ouvrir.
@@ -54,7 +54,7 @@ export function SafetyTip({ data }: { data: AppData }) {
 
   if (tip === "backup")
     return (
-      <Panel title="Petite sauvegarde ?">
+      <Panel title="Petite sauvegarde ?" soft>
         <p className="text-[0.93rem]">
           {data.lastBackupAt ? `Ta dernière sauvegarde date de ${daysSince(data.lastBackupAt)} jours.` : "Tu n’as encore jamais sauvegardé ton budget."} Un
           fichier sur ton téléphone suffit pour tout retrouver en cas de pépin.

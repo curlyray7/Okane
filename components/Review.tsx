@@ -26,8 +26,9 @@ export function Review({ data, month }: { data: AppData; month: string }) {
     });
 
   return (
-    <div className="grid items-start gap-4 min-[860px]:grid-cols-[1.1fr_.9fr]">
-      <div className="grid gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 min-[860px]:grid-cols-[1.1fr_.9fr] min-[860px]:gap-10">
+      <div className="grid gap-8">
+        <div className="grid gap-3">
         {r.overruns.length === 0 && past ? (
           <MascotSays mood="fierte">
             {payday > 1 ? (
@@ -47,6 +48,21 @@ export function Review({ data, month }: { data: AppData; month: string }) {
           </Alert>
         )}
 
+        </div>
+
+        <Panel title={`Bilan ${ofPeriod(month, payday)}`}>
+          {/* Le chiffre qui compte en premier, en grand : ce qui reste sur le compte. */}
+          <p className="text-[0.85rem] text-ink-2">Reste sur le compte courant</p>
+          <p className={`mb-4 text-[1.75rem] leading-tight font-bold tabular ${r.balance < 0 ? "text-over" : "text-save"}`}>{eur(r.balance)}</p>
+          <Row label="Revenus prévus" value={eur(r.income)} />
+          {r.extra > 0 && <Row label="Rentrées en plus" value={`+ ${eur(r.extra)}`} />}
+          <Row label="Charges fixes" value={`− ${eur(r.fixed)}`} />
+          <Row label="Dépenses des enveloppes" note={`budget ${eur(r.envBudget)}`} value={`− ${eur(r.purchases)}`} />
+          {r.refunds > 0 && <Row label="Remboursements" value={`+ ${eur(r.refunds)}`} />}
+          <Row label="Épargne versée" note={`prévu ${eur(r.plannedSavings)}`} value={`− ${eur(r.saved)}`} />
+        </Panel>
+
+        <div className="-mt-4 grid gap-3">
         {m.bonus > 0 ? (
           <Alert
             tone="ok"
@@ -58,9 +74,13 @@ export function Review({ data, month }: { data: AppData; month: string }) {
           >
             {eur(m.bonus)} ajoutés en épargne bonus. Pense à faire le virement vers ton épargne.
           </Alert>
+        ) : r.leftover > 0 && !ended ? (
+          <p className="text-[0.85rem] text-ink-2">
+            Pour l’instant, {eur(r.leftover)} non dépensés. Tu pourras les verser en épargne la dernière semaine de la période.
+          </p>
         ) : r.leftover > 0 ? (
           <Alert
-            tone={ended ? "ok" : "warn"}
+            tone="ok"
             action={
               ended ? (
                 <Button
@@ -77,26 +97,14 @@ export function Review({ data, month }: { data: AppData; month: string }) {
           >
             {ended
               ? `Il te reste ${eur(r.leftover)} non dépensés dans tes enveloppes.`
-              : `Pour l’instant, ${eur(r.leftover)} non dépensés. Le bilan définitif est proposé à partir du 25.`}
+              : `Pour l’instant, ${eur(r.leftover)} non dépensés. Tu pourras les verser en épargne la dernière semaine de la période.`}
           </Alert>
         ) : null}
 
         {data.savingsMonthly > 0 && m.savingsDone === 0 && (
           <Alert tone="warn">L’épargne {payday > 1 ? "de la période" : "du mois"} ({eur(data.savingsMonthly)}) n’est pas encore cochée comme versée. Tu peux la cocher sur l’accueil.</Alert>
         )}
-
-        <Panel title={`Bilan ${ofPeriod(month, payday)}`}>
-          <Row label="Revenus prévus" value={eur(r.income)} />
-          {r.extra > 0 && <Row label="Rentrées en plus" value={`+ ${eur(r.extra)}`} />}
-          <Row label="Charges fixes" value={`− ${eur(r.fixed)}`} />
-          <Row label="Dépenses des enveloppes" note={`budget ${eur(r.envBudget)}`} value={`− ${eur(r.purchases)}`} />
-          {r.refunds > 0 && <Row label="Remboursements" value={`+ ${eur(r.refunds)}`} />}
-          <Row label="Épargne versée" note={`prévu ${eur(r.plannedSavings)}`} value={`− ${eur(r.saved)}`} />
-          <div className="flex justify-between pt-3 font-semibold">
-            <span>Reste sur le compte courant</span>
-            <span className={`font-display tabular ${r.balance < 0 ? "text-over" : "text-save"}`}>{eur(r.balance)}</span>
-          </div>
-        </Panel>
+        </div>
 
         <Panel title="Historique">
           <History data={data} month={month} />
@@ -108,12 +116,12 @@ export function Review({ data, month }: { data: AppData; month: string }) {
           const s = r.spent[c.id] ?? 0;
           return (
             <div key={c.id} className="flex justify-between gap-3 border-b border-line py-2.5 last:border-b-0">
-              <span className="flex items-center gap-2">
-                <i className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: colorFor(data, c.id) }} />
+              <span className="flex min-w-0 items-center gap-2">
+                <i className="inline-block h-2.5 w-2.5 flex-none rounded-full" style={{ background: colorFor(data, c.id) }} />
                 {c.name}
               </span>
               <span className="tabular">
-                <b className={`font-display ${s > r.budgets[c.id] ? "text-over" : ""}`}>{eur(Math.max(0, s))}</b>
+                <b className={s > r.budgets[c.id] ? "text-over" : ""}>{eur(Math.max(0, s))}</b>
                 <span className="text-sm text-ink-2"> / {eur(r.budgets[c.id])}</span>
               </span>
             </div>
@@ -126,11 +134,11 @@ export function Review({ data, month }: { data: AppData; month: string }) {
 
 function Row({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="flex justify-between gap-3 border-b border-line py-2">
+    <div className="flex justify-between gap-3 border-b border-line py-2 text-[0.95rem] last:border-b-0">
       <span className="min-w-0">
-        {label} {note && <span className="text-sm text-ink-2">({note})</span>}
+        {label} {note && <span className="text-[0.8rem] text-ink-2">({note})</span>}
       </span>
-      <b className="font-display font-semibold whitespace-nowrap tabular">{value}</b>
+      <span className="font-semibold whitespace-nowrap tabular">{value}</span>
     </div>
   );
 }

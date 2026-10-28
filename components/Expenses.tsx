@@ -4,7 +4,7 @@ import { SAVINGS, type AppData } from "@/lib/types";
 import { categoryName, colorFor, getMonth, sumBy } from "@/lib/calc";
 import { dayLabel, eur } from "@/lib/format";
 import { inPeriod, paydayOf } from "@/lib/period";
-import { Button, Panel } from "./ui";
+import { Button } from "./ui";
 
 interface Line {
   id: string;
@@ -32,8 +32,9 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
 
   if (list.length === 0)
     return (
-      <Panel className="py-10 text-center">
-        <p className="text-ink-2">Aucune opération {inPeriod(month, paydayOf(data))}.</p>
+      <div className="mx-auto max-w-[640px] py-10 text-center">
+        <p className="text-[1.05rem] font-semibold">Aucune opération {inPeriod(month, paydayOf(data))}</p>
+        <p className="mt-1 text-[0.9rem] text-ink-2">Note une dépense avec le bouton +, ou importe ton relevé de compte.</p>
         <div className="mt-5 flex flex-wrap justify-center gap-2.5">
           <Button variant="accent" onClick={onAdd}>
             Ajouter une dépense
@@ -42,7 +43,7 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
             Importer un relevé
           </Button>
         </div>
-      </Panel>
+      </div>
     );
 
   const byDay = new Map<string, Line[]>();
@@ -50,53 +51,45 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
 
   return (
     <div className="mx-auto max-w-[640px]">
-      <Panel className="mb-4">
-        <div className="flex justify-between">
-          <span>Dépensé {paydayOf(data) > 1 ? "sur la période" : "ce mois"}</span>
-          <b className="font-display tabular">{eur(spent)}</b>
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[0.85rem] text-ink-2">Dépensé {paydayOf(data) > 1 ? "sur la période" : "ce mois"}</p>
+          <p className="text-[1.75rem] leading-tight font-bold tabular">{eur(spent)}</p>
+          {(refunded > 0 || extras > 0) && (
+            <p className="text-[0.85rem] text-save">
+              {[refunded > 0 && `+${eur(refunded)} remboursés`, extras > 0 && `+${eur(extras)} en plus`].filter(Boolean).join(" · ")}
+            </p>
+          )}
         </div>
-        {refunded > 0 && (
-          <div className="mt-1 flex justify-between text-save">
-            <span>Remboursements</span>
-            <b className="font-display tabular">+{eur(refunded)}</b>
-          </div>
-        )}
-        {extras > 0 && (
-          <div className="mt-1 flex justify-between text-save">
-            <span>Rentrées en plus</span>
-            <b className="font-display tabular">+{eur(extras)}</b>
-          </div>
-        )}
-        <Button variant="ghost" className="mt-3 w-full" onClick={onImport}>
-          Importer un relevé bancaire
+        <Button variant="ghost" className="px-3 py-2 text-sm" onClick={onImport}>
+          Importer un relevé
         </Button>
-      </Panel>
+      </div>
       {[...byDay.entries()].map(([day, items]) => (
-        <div key={day} className="mb-4">
-          <h3 className="mb-1.5 font-manga text-lg text-accent first-letter:uppercase">{dayLabel(day)}</h3>
-          {items.map((e) => (
-            <button
-              key={e.id}
-              type="button"
-              onClick={() => onEdit(e.id)}
-              className="mb-2 flex w-full items-center gap-3 rounded-xl border-2 border-ink bg-surface px-3 py-2.5 text-left shadow-ink-sm transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-            >
-              <i className="inline-block h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: e.cat === SAVINGS ? "var(--save)" : colorFor(data, e.cat) }} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{e.label || where(data, e.cat)}</span>
-                {/* Sans libellé, le nom de l’enveloppe est déjà le titre : on ne le répète pas. */}
-                {(e.label || e.extra || e.amount < 0 || e.imported) && (
-                  <small className="block text-[0.8rem] text-ink-2">
-                    {[e.extra ? "En plus" : e.amount < 0 ? "Remboursement" : "", e.label ? where(data, e.cat) : "", e.imported ? "relevé" : ""].filter(Boolean).join(" · ")}
-                  </small>
-                )}
-              </span>
-              <span className={`font-display font-semibold tabular ${e.extra || e.amount < 0 ? "text-save" : ""}`}>
-                {e.extra || e.amount < 0 ? `+${eur(Math.abs(e.amount))}` : eur(e.amount)}
-              </span>
-            </button>
-          ))}
-        </div>
+        <section key={day} className="mb-6">
+          <h3 className="mb-1 text-[0.82rem] font-semibold text-ink-2 first-letter:uppercase">{dayLabel(day)}</h3>
+          <ul>
+            {items.map((e) => (
+              <li key={e.id} className="border-b border-line last:border-b-0">
+                <button type="button" onClick={() => onEdit(e.id)} className="-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-surface-2">
+                  <i className="inline-block h-2.5 w-2.5 flex-none rounded-full" style={{ background: e.cat === SAVINGS ? "var(--save)" : colorFor(data, e.cat) }} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{e.label || where(data, e.cat)}</span>
+                    {/* Sans libellé, le nom de l’enveloppe est déjà le titre : on ne le répète pas. */}
+                    {(e.label || e.extra || e.amount < 0 || e.imported) && (
+                      <small className="block text-[0.78rem] text-ink-2">
+                        {[e.extra ? "En plus" : e.amount < 0 ? "Remboursement" : "", e.label ? where(data, e.cat) : "", e.imported ? "relevé" : ""].filter(Boolean).join(" · ")}
+                      </small>
+                    )}
+                  </span>
+                  <span className={`font-semibold whitespace-nowrap tabular ${e.extra || e.amount < 0 ? "text-save" : ""}`}>
+                    {e.extra || e.amount < 0 ? `+${eur(Math.abs(e.amount))}` : eur(e.amount)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
     </div>
   );

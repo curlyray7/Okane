@@ -141,7 +141,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center justify-between gap-3 px-[18px] pt-[18px] pb-3">
-          <h2 id="import-title" className="font-manga text-[1.7rem] leading-none">
+          <h2 id="import-title" className="text-[1.25rem] leading-tight font-bold">
             Importer un relevé
           </h2>
           <button type="button" aria-label="Fermer" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full border-2 border-ink text-lg">
@@ -160,7 +160,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
                 load(e.dataTransfer.files[0]);
               }}
             >
-              <span className="font-manga text-2xl text-accent">Choisir un fichier</span>
+              <span className="text-[1.1rem] font-bold text-accent">Choisir un fichier</span>
               <span className="text-sm text-ink-2">Relevé PDF, CSV ou OFX · lu sur ton appareil, rien n’est envoyé</span>
               <input type="file" accept=".pdf,.csv,.ofx,.qfx,.txt,application/pdf,text/csv" className="sr-only" onChange={(e) => load(e.target.files?.[0])} />
             </label>
@@ -203,7 +203,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
                       type="button"
                       aria-pressed={filter === k}
                       onClick={() => setFilter(k)}
-                      className={`rounded-full border-2 px-3 py-1.5 text-sm font-semibold ${filter === k ? "border-ink bg-accent text-on-accent shadow-ink-sm" : "border-line bg-surface-2"}`}
+                      className={`rounded-full border-2 px-3 py-1.5 text-sm font-semibold ${filter === k ? "border-ink bg-accent text-on-accent" : "border-line bg-surface"}`}
                     >
                       {l}
                     </button>
@@ -222,8 +222,8 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
                 return (
                   <div key={r.ref}>
                     {section !== null && (
-                      <div className="mt-3 mb-1 border-b-2 border-ink pb-1">
-                        <h3 className="font-manga text-xl">{r.credit ? "Rentrées d’argent" : "Dépenses"}</h3>
+                      <div className="mt-4 mb-1 border-b border-line pb-1.5">
+                        <h3 className="text-[1.05rem] font-bold">{r.credit ? "Rentrées d’argent" : "Dépenses"}</h3>
                         {r.credit && (
                           <p className="mt-0.5 text-[0.8rem] text-ink-2">
                             Remboursement : l’argent revient dans l’enveloppe. En plus : il s’ajoute au budget d’une enveloppe ou à ton épargne.
@@ -232,7 +232,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
                         )}
                       </div>
                     )}
-                    {head && <h3 className="mt-2 mb-1.5 font-manga text-lg text-accent first-letter:uppercase">{dayLabel(head)}</h3>}
+                    {head && <h3 className="mt-3 mb-1.5 text-[0.82rem] font-semibold text-ink-2 first-letter:uppercase">{dayLabel(head)}</h3>}
                     <div className={`mb-2 rounded-xl border-2 px-3 py-2.5 ${r.target ? "border-line" : "border-pop"}`}>
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="min-w-0 truncate" title={r.label}>

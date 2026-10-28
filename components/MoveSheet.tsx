@@ -59,7 +59,7 @@ export function MoveSheet({ data, month, to: initialTo, amount: initialAmount, o
   };
 
   const chip = (active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.88rem] ${active ? "border-2 border-ink bg-accent text-on-accent shadow-ink-sm" : "border-2 border-line bg-surface-2"}`;
+    `inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.88rem] ${active ? "border-2 border-ink bg-accent text-on-accent" : "border-2 border-line bg-surface"}`;
   const money = (n: number) => (n < 0 ? `− ${eur(-n)}` : eur(n));
 
   return (
@@ -72,7 +72,7 @@ export function MoveSheet({ data, month, to: initialTo, amount: initialAmount, o
           save();
         }}
       >
-        <h2 id="move-title" className="font-manga text-[1.7rem] leading-none">
+        <h2 id="move-title" className="text-[1.25rem] leading-tight font-bold">
           Déplacer de l’argent
         </h2>
         <p className="mt-1 text-sm text-ink-2">Pour {inPeriod(month, paydayOf(data)).replace(/^en /, "")} seulement : ton budget prévu des autres périodes ne change pas.</p>

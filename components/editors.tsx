@@ -83,7 +83,7 @@ export function RowsEditor({
           )}
         </div>
       ))}
-      <button type="button" className="mt-1 rounded-xl border-2 border-dashed border-accent px-4 py-2.5 text-sm font-semibold text-accent" onClick={() => onChange([...rows, newRow()])}>
+      <button type="button" className="mt-1 py-1 text-sm font-semibold text-accent underline-offset-4 hover:underline" onClick={() => onChange([...rows, newRow()])}>
         + {addLabel}
       </button>
     </div>
@@ -102,7 +102,7 @@ export function GoalsEditor({ rows, onChange }: { rows: GoalRow[]; onChange: (ro
   return (
     <div className="space-y-3">
       {rows.map((r, i) => (
-        <div key={r.id} className="rounded-2xl border-2 border-ink p-3">
+        <div key={r.id} className="rounded-2xl bg-surface-2 p-3">
           <div className="mb-2 flex items-center justify-between text-sm text-ink-2">
             <span>Priorité {i + 1}</span>
             <span className="flex gap-1">
@@ -124,7 +124,7 @@ export function GoalsEditor({ rows, onChange }: { rows: GoalRow[]; onChange: (ro
           </div>
         </div>
       ))}
-      <button type="button" className="rounded-xl border-2 border-dashed border-accent px-4 py-2.5 text-sm font-semibold text-accent" onClick={() => onChange([...rows, newGoalRow()])}>
+      <button type="button" className="py-1 text-sm font-semibold text-accent underline-offset-4 hover:underline" onClick={() => onChange([...rows, newGoalRow()])}>
         + Ajouter un objectif
       </button>
     </div>

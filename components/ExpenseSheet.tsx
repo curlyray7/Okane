@@ -76,14 +76,14 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <form
-        className="max-h-[92vh] w-full max-w-[520px] overflow-auto rounded-t-[22px] bg-surface px-[18px] pt-[18px] min-[600px]:rounded-[22px]"
+        className="max-h-[92vh] w-full max-w-[520px] overflow-auto rounded-t-[22px] border-2 border-b-0 border-ink bg-surface px-[18px] pt-[18px] min-[600px]:rounded-[22px] min-[600px]:border-b-2 min-[600px]:shadow-ink"
         style={{ paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))" }}
         onSubmit={(e) => {
           e.preventDefault();
           save();
         }}
       >
-        <h2 id="sheet-title" className="font-display text-xl font-semibold">
+        <h2 id="sheet-title" className="font-manga text-[1.7rem] leading-none">
           {existing ? "Modifier la dépense" : "Nouvelle dépense"}
         </h2>
         {envs.length === 0 ? (
@@ -99,7 +99,7 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
                 placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-[6ch] bg-transparent p-0 text-center font-display text-5xl font-extrabold tabular outline-none placeholder:text-ink-2/50"
+                className="w-[6ch] bg-transparent p-0 text-center font-manga text-6xl tabular outline-none placeholder:text-ink-2/50"
               />
               <span className="font-display text-3xl font-semibold text-ink-2">€</span>
             </div>
@@ -111,7 +111,7 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
                   type="button"
                   aria-pressed={c.id === cat}
                   onClick={() => setCat(c.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[0.9rem] ${c.id === cat ? "border-ink bg-ink text-surface" : "border-line bg-surface-2"}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[0.9rem] ${c.id === cat ? "border-2 border-ink bg-accent text-on-accent shadow-ink-sm" : "border-2 border-line bg-surface-2"}`}
                 >
                   <i className="inline-block h-2.5 w-2.5 rounded-[3px]" style={{ background: colorFor(data, c.id) }} />
                   {c.name}
@@ -134,7 +134,7 @@ export function ExpenseSheet({ data, month, expenseId, onClose }: { data: AppDat
             Annuler
           </Button>
           {envs.length > 0 && (
-            <button type="submit" className="flex-1 rounded-xl bg-accent py-3 font-semibold text-on-accent">
+            <button type="submit" className="flex-1 rounded-xl border-2 border-ink bg-accent py-3 font-semibold text-on-accent shadow-ink-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
               {existing ? "Enregistrer" : "Ajouter"}
             </button>
           )}

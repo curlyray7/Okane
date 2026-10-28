@@ -46,7 +46,7 @@ export function Shell({ data }: { data: AppData }) {
           <header className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5">
               <MonthBtn label="Mois précédent" disabled={!canPrev} onClick={() => setMonth(addMonths(month, -1))}>‹</MonthBtn>
-              <h1 className="min-w-[9ch] text-center font-display text-2xl font-bold capitalize">{monthLabel(month)}</h1>
+              <h1 className="min-w-[9ch] text-center font-manga text-[2rem] leading-none capitalize">{monthLabel(month)}</h1>
               <MonthBtn label="Mois suivant" onClick={() => setMonth(addMonths(month, 1))}>›</MonthBtn>
             </div>
             {month !== monthKey() && (
@@ -67,7 +67,7 @@ export function Shell({ data }: { data: AppData }) {
           type="button"
           aria-label="Ajouter une dépense"
           onClick={() => setSheet({ open: true })}
-          className="fixed z-20 grid h-[62px] w-[62px] place-items-center rounded-full border-[3px] border-[#141414] bg-sun text-[2.2rem] leading-none font-medium text-[#141414] min-[1080px]:right-[calc(50%-520px+18px)]"
+          className="fixed z-20 grid h-[62px] w-[62px] place-items-center rounded-full border-[3px] border-ink bg-pop text-[2.2rem] leading-none font-medium text-on-pop shadow-ink transition-transform active:scale-95 min-[1080px]:right-[calc(50%-520px+18px)]"
           style={{ right: 18, bottom: "calc(84px + env(safe-area-inset-bottom, 0px))" }}
         >
           +
@@ -86,7 +86,7 @@ export function Shell({ data }: { data: AppData }) {
               type="button"
               aria-current={tab === t.id ? "page" : undefined}
               onClick={() => go(t.id)}
-              className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[0.8rem] font-semibold ${tab === t.id ? "bg-accent text-on-accent" : "text-ink-2"}`}
+              className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[0.8rem] font-semibold ${tab === t.id ? "border-2 border-ink bg-accent text-on-accent shadow-ink-sm" : "border-2 border-transparent text-ink-2"}`}
             >
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={t.icon} />
@@ -104,7 +104,7 @@ export function Shell({ data }: { data: AppData }) {
 
 function MonthBtn({ children, label, onClick, disabled }: { children: React.ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
   return (
-    <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="grid h-9 w-9 place-items-center rounded-full border border-line bg-surface text-lg disabled:opacity-30">
+    <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="grid h-9 w-9 place-items-center rounded-full border-2 border-ink bg-surface text-lg shadow-ink-sm disabled:opacity-30 disabled:shadow-none">
       {children}
     </button>
   );

@@ -1,74 +1,89 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f4f4f1;
+  --bg: #f6f5fb;
   --surface: #ffffff;
-  --surface-2: #efefeb;
-  --ink: #141414;
-  --ink-2: #5f6168;
-  --line: #dcdcd6;
-  --accent: #1f4fd1;
-  --accent-soft: #e2e9fb;
-  --sun: #f5b700;
+  --surface-2: #efedf7;
+  --ink: #120d22;
+  --ink-2: #5d5873;
+  --line: #dcd8ea;
+  --shade: #120d22;
+  --accent: #6d28d9;
+  --accent-soft: #ede5ff;
+  --pop: #06b6d4;
+  --pop-soft: #d6f6fb;
+  --hero: #2a1065;
+  --on-hero: #ffffff;
   --save: #0e7a55;
   --save-soft: #dcf1e8;
   --warn: #9a6a00;
   --warn-soft: #fff1c7;
   --over: #d92d20;
   --over-soft: #fde3e0;
-  --track: #e4e4df;
+  --track: #e6e3f0;
   --on-accent: #ffffff;
-  --c1: #3a6ff7;
-  --c2: #f5b700;
-  --c3: #22a99a;
-  --c4: #f28b30;
-  --c5: #a77be0;
-  --c6: #ff86ad;
+  --on-pop: #120d22;
+  --c1: #7c3aed;
+  --c2: #06b6d4;
+  --c3: #f59e0b;
+  --c4: #ec4899;
+  --c5: #10b981;
+  --c6: #3b82f6;
   --c7: #8f949c;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #111317;
-    --surface: #1b1e24;
-    --surface-2: #242830;
-    --ink: #f3f3ef;
-    --ink-2: #a5a9b2;
-    --line: #30343d;
-    --accent: #7fa2ff;
-    --accent-soft: #1f2a48;
-    --sun: #ffc93c;
+    --bg: #0d0b1a;
+    --surface: #17142a;
+    --surface-2: #211d38;
+    --ink: #f4f2ff;
+    --ink-2: #a9a3c4;
+    --line: #2f2a4a;
+    --shade: #7c3aed;
+    --accent: #a78bfa;
+    --accent-soft: #2a1f4f;
+    --pop: #22d3ee;
+    --pop-soft: #0f3540;
+    --hero: #1e1442;
+    --on-hero: #ffffff;
     --save: #4fd1a0;
     --save-soft: #16322a;
     --warn: #ffcf5c;
     --warn-soft: #3a3014;
     --over: #ff6b5e;
     --over-soft: #3d1c19;
-    --track: #2c3038;
-    --on-accent: #111317;
+    --track: #2c2745;
+    --on-accent: #0d0b1a;
+    --on-pop: #0d0b1a;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #111317;
-  --surface: #1b1e24;
-  --surface-2: #242830;
-  --ink: #f3f3ef;
-  --ink-2: #a5a9b2;
-  --line: #30343d;
-  --accent: #7fa2ff;
-  --accent-soft: #1f2a48;
-  --sun: #ffc93c;
+  --bg: #0d0b1a;
+  --surface: #17142a;
+  --surface-2: #211d38;
+  --ink: #f4f2ff;
+  --ink-2: #a9a3c4;
+  --line: #2f2a4a;
+  --shade: #7c3aed;
+  --accent: #a78bfa;
+  --accent-soft: #2a1f4f;
+  --pop: #22d3ee;
+  --pop-soft: #0f3540;
+  --hero: #1e1442;
+  --on-hero: #ffffff;
   --save: #4fd1a0;
   --save-soft: #16322a;
   --warn: #ffcf5c;
   --warn-soft: #3a3014;
   --over: #ff6b5e;
   --over-soft: #3d1c19;
-  --track: #2c3038;
-  --on-accent: #111317;
+  --track: #2c2745;
+  --on-accent: #0d0b1a;
+  --on-pop: #0d0b1a;
   color-scheme: dark;
 }
 
@@ -79,9 +94,13 @@
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-line: var(--line);
+  --color-shade: var(--shade);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
-  --color-sun: var(--sun);
+  --color-pop: var(--pop);
+  --color-pop-soft: var(--pop-soft);
+  --color-hero: var(--hero);
+  --color-on-hero: var(--on-hero);
   --color-save: var(--save);
   --color-save-soft: var(--save-soft);
   --color-warn: var(--warn);
@@ -90,8 +109,12 @@
   --color-over-soft: var(--over-soft);
   --color-track: var(--track);
   --color-on-accent: var(--on-accent);
+  --color-on-pop: var(--on-pop);
   --font-sans: "Rubik", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-display: "Rubik", "Segoe UI", system-ui, sans-serif;
+  --font-manga: "Bangers", "Rubik", system-ui, sans-serif;
+  --shadow-ink: 4px 4px 0 var(--shade);
+  --shadow-ink-sm: 3px 3px 0 var(--shade);
 }
 
 :root {
@@ -119,13 +142,60 @@ body::before {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+/* Titres manga : Bangers est étroite, on l’espace un peu. */
+.font-manga {
+  letter-spacing: 0.03em;
+  font-weight: 400;
+}
+/* Traits de vitesse rayonnants, façon case de manga. */
+.speed-lines {
+  position: relative;
+  isolation: isolate;
+}
+.speed-lines::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: repeating-conic-gradient(from 0deg at 85% 15%, transparent 0deg 7deg, color-mix(in srgb, var(--pop) 14%, transparent) 7deg 9deg);
+  mask-image: radial-gradient(circle at 85% 15%, transparent 12%, #000 70%);
+}
+/* « Power up » : petit saut + aura cyan quand un cap est franchi. */
+@keyframes power-up {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--pop) 60%, transparent);
+  }
+  40% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+.power-up {
+  animation: power-up 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes float {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+.float {
+  animation: float 3.2s ease-in-out infinite;
+}
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-input,
-select {
-  font: inherit;
+/* En couche base pour que les utilitaires (taille, police) puissent la surcharger. */
+@layer base {
+  input,
+  select {
+    font: inherit;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   * {

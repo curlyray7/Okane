@@ -6,6 +6,7 @@ import { eur, eur0, monthKey, round2 } from "@/lib/format";
 import { Alert, Button, MoneyInput } from "./ui";
 import { GoalsEditor, RowsEditor, newGoalRow } from "./editors";
 import { Draft, draftToData, draftTotals, emptyDraft, validateDraft } from "./draft";
+import { Mascot } from "./Mascot";
 
 const STEPS = ["welcome", "incomes", "fixed", "envelopes", "savings", "goals", "recap"] as const;
 type Step = (typeof STEPS)[number];
@@ -51,10 +52,10 @@ export function Onboarding() {
         <div className="mb-6">
           <div className="mb-2 flex justify-between text-sm text-ink-2">
             <button type="button" onClick={back} className="font-semibold">‹ Retour</button>
-            <span>Étape {idx} sur {STEPS.length - 1}</span>
+            <span className="font-manga text-base text-accent">Niveau {idx} / {STEPS.length - 1}</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded bg-track">
-            <div className="h-full bg-accent transition-all" style={{ width: `${(idx / (STEPS.length - 1)) * 100}%` }} />
+          <div className="h-3 overflow-hidden rounded-full border-2 border-ink bg-track">
+            <div className="h-full bg-pop transition-all" style={{ width: `${(idx / (STEPS.length - 1)) * 100}%` }} />
           </div>
         </div>
       )}
@@ -62,13 +63,13 @@ export function Onboarding() {
       {step === "welcome" && (
         <div className="pt-10">
           <Logo />
-          <Facade />
-          <h1 className="mt-8 font-display text-[2.8rem] leading-[1.02] font-black tracking-tight">
-            Yallah, on range ton budget.
+          <Hero />
+          <h1 className="mt-8 font-manga text-[3.2rem] leading-[0.95]">
+            Ton budget, niveau boss.
           </h1>
           <p className="mt-4 max-w-md text-lg text-ink-2">
-            Fini le balagan. Tu donnes une mission à chaque euro (charges, enveloppes, épargne), puis tu vois en un coup
-            d’œil ce qu’il te reste.
+            Chaque euro reçoit sa mission (charges, enveloppes, épargne), puis tu vois en un coup d’œil ce qu’il te
+            reste. Prêt pour l’entraînement ?
           </p>
           <ul className="mt-6 space-y-2 text-[0.95rem]">
             <li>Cinq minutes pour créer ton budget.</li>
@@ -76,7 +77,7 @@ export function Onboarding() {
             <li>Tes données restent sur cet appareil.</li>
           </ul>
           <Button variant="accent" className="mt-8 w-full py-3.5 text-lg" onClick={next}>
-            Yallah, on commence
+            Yosh, on commence !
           </Button>
         </div>
       )}
@@ -120,7 +121,7 @@ export function Onboarding() {
       {step === "goals" && (
         <StepFrame title="Tes objectifs d’épargne" hint="Facultatif. Ton épargne remplit tes objectifs dans l’ordre de priorité.">
           {draft.goals.length === 0 && precaution > 0 && (
-            <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-[0.95rem]">
+            <div className="mb-4 rounded-2xl border-2 border-ink bg-surface p-4 text-[0.95rem] shadow-ink-sm">
               <p>
                 Un conseil : commence par une <b>épargne de précaution</b> de 3 mois de dépenses, soit {eur0(precaution)} avec ton
                 budget.
@@ -140,7 +141,7 @@ export function Onboarding() {
 
       {step === "recap" && (
         <StepFrame title="Ton budget mensuel" hint="Vérifie, puis lance-toi. Tout reste modifiable dans les réglages.">
-          <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="rounded-2xl border-2 border-ink bg-surface p-4 shadow-ink-sm">
             <Line label="Revenus" value={totals.income} />
             <Line label="Charges fixes" value={-totals.fixed} />
             <Line label="Enveloppes" value={-totals.envelopes} />
@@ -178,7 +179,7 @@ export function Onboarding() {
         <div className="mt-8">
           {step === "recap" ? (
             <Button variant="accent" className="w-full py-3.5 text-lg" onClick={finish}>
-              Commencer
+              C’est parti !
             </Button>
           ) : (
             <Button variant="accent" className="w-full py-3.5 text-lg" onClick={next}>
@@ -195,36 +196,33 @@ export function Logo() {
   return (
     <div className="flex items-center gap-3">
       <svg width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">
-        <rect width="42" height="42" rx="12" fill="var(--accent)" />
-        <circle cx="15" cy="16" r="7" fill="var(--sun)" />
-        <path d="M24 23a10 10 0 0 1 10-10v10z" fill="#fff" />
-        <rect x="8" y="28" width="26" height="6" rx="3" fill="#fff" />
+        <rect x="1" y="1" width="40" height="40" rx="12" fill="var(--accent)" stroke="var(--ink)" strokeWidth="2" />
+        <circle cx="21" cy="21" r="11" fill="var(--pop)" stroke="var(--ink)" strokeWidth="2" />
+        <path d="M23 12l-6 10h5l-2 8 6-10h-5z" fill="var(--ink)" />
       </svg>
-      <span className="font-display text-2xl font-black tracking-tight">Yallah</span>
+      <span className="font-manga text-3xl">Okane</span>
     </div>
   );
 }
 
-/** Façade de la Ville Blanche : balcons arrondis et fenêtres en bandeau. */
-function Facade() {
+/** Case de manga d’accueil : traits de vitesse et mascotte en pose de victoire. */
+function Hero() {
   return (
-    <svg viewBox="0 0 340 150" className="mt-8 block h-auto w-full max-w-[420px]" aria-hidden="true">
-      <rect x="0" y="0" width="340" height="150" rx="24" fill="var(--surface)" stroke="var(--ink)" strokeWidth="2.5" />
-      <rect x="22" y="24" width="200" height="22" rx="11" fill="var(--accent)" />
-      <rect x="22" y="62" width="150" height="22" rx="11" fill="var(--ink)" />
-      <rect x="182" y="62" width="40" height="22" rx="11" fill="var(--sun)" />
-      <rect x="22" y="100" width="110" height="22" rx="11" fill="var(--track)" />
-      <rect x="22" y="100" width="64" height="22" rx="11" fill="var(--accent)" />
-      <circle cx="282" cy="54" r="30" fill="var(--sun)" />
-      <path d="M252 122a30 30 0 0 1 60 0z" fill="var(--ink)" />
-    </svg>
+    <div className="speed-lines mt-8 flex h-[170px] max-w-[420px] items-center justify-between overflow-hidden rounded-[24px] border-2 border-ink bg-hero px-6 shadow-ink">
+      <p className="font-manga text-[2.4rem] leading-[0.9] text-pop [text-shadow:3px_3px_0_var(--ink)]">
+        Gan-
+        <br />
+        batte&nbsp;<span className="text-on-hero">!</span>
+      </p>
+      <Mascot mood="victoire" size={140} />
+    </div>
   );
 }
 
 function StepFrame({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (
     <div>
-      <h1 className="font-display text-[1.9rem] leading-tight font-black tracking-tight">{title}</h1>
+      <h1 className="font-manga text-[2.3rem] leading-none">{title}</h1>
       <p className="mt-2 mb-6 text-ink-2">{hint}</p>
       {children}
     </div>
@@ -245,7 +243,7 @@ function Field({ label, hint, children }: { label: string; hint: string; childre
 
 function Total({ label, value }: { label: string; value: number }) {
   return (
-    <div className="mt-6 flex justify-between rounded-2xl bg-surface p-4">
+    <div className="mt-6 flex justify-between rounded-2xl border-2 border-ink bg-surface p-4 shadow-ink-sm">
       <span>{label}</span>
       <b className="font-display tabular">{eur(value)}</b>
     </div>
@@ -254,7 +252,7 @@ function Total({ label, value }: { label: string; value: number }) {
 
 function Remaining({ value, final }: { value: number; final?: boolean }) {
   return (
-    <div className={`mt-6 flex justify-between rounded-2xl p-4 ${value < 0 ? "bg-over-soft text-over" : "bg-surface"}`}>
+    <div className={`mt-6 flex justify-between rounded-2xl border-2 p-4 shadow-ink-sm ${value < 0 ? "border-over bg-over-soft text-over" : "border-ink bg-surface"}`}>
       <span>{final ? "Reste à répartir" : "Il reste"}</span>
       <b className="font-display tabular">{eur(value)}</b>
     </div>
@@ -271,11 +269,11 @@ function Line({ label, value }: { label: string; value: number }) {
 }
 
 export function AllocateAlert({ value }: { value: number }) {
-  if (Math.abs(value) < 0.01) return <Alert tone="ok">Chaque euro a une mission. Parfait.</Alert>;
+  if (Math.abs(value) < 0.01) return <Alert tone="ok">Chaque euro a sa mission. Sugoi !</Alert>;
   if (value > 0)
     return (
       <Alert tone="warn">
-        {eur(value)} n’ont pas encore de mission. Ajoute-les à ton épargne ou à une enveloppe, sinon c’est le balagan assuré.
+        {eur(value)} n’ont pas encore de mission. Ajoute-les à ton épargne ou à une enveloppe, pas d’euro sans mission.
       </Alert>
     );
   return <Alert tone="bad">Tu prévois {eur(-value)} de plus que ce que tu gagnes. Réduis une enveloppe ou ton épargne.</Alert>;

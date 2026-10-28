@@ -5,11 +5,11 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
 type Variant = "primary" | "accent" | "save" | "ghost" | "danger";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-ink text-surface",
-  accent: "bg-accent text-on-accent",
-  save: "bg-save text-on-accent",
-  ghost: "border border-line text-ink bg-transparent",
-  danger: "border border-over text-over bg-transparent",
+  primary: "border-2 border-ink bg-ink text-surface shadow-ink-sm",
+  accent: "border-2 border-ink bg-accent text-on-accent shadow-ink-sm",
+  save: "border-2 border-ink bg-save text-on-accent shadow-ink-sm",
+  ghost: "border-2 border-ink text-ink bg-surface",
+  danger: "border-2 border-over text-over bg-transparent",
 };
 
 export function Button({
@@ -21,7 +21,7 @@ export function Button({
     <button
       type="button"
       {...props}
-      className={`whitespace-nowrap rounded-xl px-4 py-2.5 font-semibold disabled:opacity-40 ${variants[variant]} ${className}`}
+      className={`whitespace-nowrap rounded-xl px-4 py-2.5 font-semibold transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-40 ${variants[variant]} ${className}`}
     />
   );
 }
@@ -38,10 +38,10 @@ export function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-[22px] border border-line bg-surface p-[18px] ${className}`}>
+    <section className={`rounded-[20px] border-2 border-ink bg-surface p-[18px] shadow-ink ${className}`}>
       {(title || action) && (
         <div className="mb-3 flex items-center justify-between gap-3">
-          {title && <h2 className="font-display text-lg font-bold">{title}</h2>}
+          {title && <h2 className="font-manga text-[1.6rem] leading-none">{title}</h2>}
           {action}
         </div>
       )}
@@ -50,9 +50,9 @@ export function Panel({
   );
 }
 
-export function Bar({ value, color, height = 8 }: { value: number; color: string; height?: number }) {
+export function Bar({ value, color, height = 12 }: { value: number; color: string; height?: number }) {
   return (
-    <div className="w-full overflow-hidden rounded-full bg-track" style={{ height }}>
+    <div className="w-full overflow-hidden rounded-full border-2 border-ink bg-track" style={{ height }}>
       <div
         className="h-full rounded-full"
         style={{ width: `${Math.max(0, Math.min(100, value * 100))}%`, background: color }}
@@ -70,7 +70,7 @@ const tones: Record<Tone, string> = {
 
 export function Alert({ tone, children, action }: { tone: Tone; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-[0.93rem] ${tones[tone]}`}>
+    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-current px-4 py-3 text-[0.93rem] ${tones[tone]}`}>
       <div className="min-w-0 flex-[1_1_15rem]">{children}</div>
       {action}
     </div>
@@ -81,7 +81,7 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full min-w-0 rounded-[10px] border border-line bg-surface-2 px-3 py-2.5 text-ink placeholder:text-ink-2/70 ${props.className ?? ""}`}
+      className={`w-full min-w-0 rounded-[10px] border-2 border-line bg-surface-2 focus:border-accent px-3 py-2.5 text-ink placeholder:text-ink-2/70 ${props.className ?? ""}`}
     />
   );
 }
@@ -126,7 +126,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         role="status"
         aria-live="polite"
-        className={`pointer-events-none fixed left-1/2 z-50 -translate-x-1/2 rounded-xl bg-ink px-4 py-2.5 text-sm text-surface transition-opacity ${msg ? "opacity-100" : "opacity-0"}`}
+        className={`pointer-events-none fixed left-1/2 z-50 -translate-x-1/2 rounded-xl border-2 border-ink bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent shadow-ink-sm transition-opacity ${msg ? "opacity-100" : "opacity-0"}`}
         style={{ bottom: "calc(150px + env(safe-area-inset-bottom, 0px))" }}
       >
         {msg}

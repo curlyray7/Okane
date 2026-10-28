@@ -6,6 +6,7 @@ import { daysInMonth, eur, eur0, monthKey, monthLabel } from "@/lib/format";
 import { updateData } from "@/lib/store";
 import { AllocateAlert } from "./Onboarding";
 import { Bar, Button, Panel, useToast } from "./ui";
+import { MascotSays, type Mood } from "./Mascot";
 
 export function Home({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
@@ -20,6 +21,17 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const fixed = fixedCats(data);
   const m = getMonth(data, month);
   const rest = toAllocate(data);
+  const goals = goalProgress(data);
+  const overCat = envs.find((c) => envelopeStatus(c, spent[c.id] ?? 0).level === "over");
+  const doneGoal = goals.find((g) => g.done);
+  const [mood, line]: [Mood, string] =
+    available < 0 || overCat
+      ? ["inquiete", overCat ? `Aïe, « ${overCat.name} » est dépassée. On se reprend, ganbatte !` : "Aïe, tes enveloppes sont dans le rouge. On se reprend, ganbatte !"]
+      : doneGoal
+        ? ["victoire", `Sugoi ! Objectif « ${doneGoal.goal.name} » atteint.`]
+        : m.savingsDone > 0
+          ? ["contente", "Épargne versée, yosh ! Continue comme ça."]
+          : ["neutre", `Encore ${eur(available)} à dépenser ce mois-ci. Ganbatte !`];
 
   const toggleSavings = () => {
     updateData((d) => {
@@ -32,12 +44,12 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   return (
     <div className="grid items-start gap-4 min-[860px]:grid-cols-[1.15fr_.85fr]">
       <div className="grid gap-4">
-        <section aria-label="Disponible ce mois" className="rounded-[28px] bg-ink px-5 pt-5 pb-5 text-surface">
-          <p className="text-[0.95rem] text-surface/70">Disponible dans tes enveloppes</p>
-          <p className={`mt-1.5 font-display text-[clamp(2.8rem,11vw,4.2rem)] leading-none font-black tracking-tight tabular ${available < 0 ? "text-over" : ""}`}>
+        <section aria-label="Disponible ce mois" className="speed-lines rounded-[24px] border-2 border-ink bg-hero px-5 pt-5 pb-5 text-on-hero shadow-ink">
+          <p className="font-manga text-xl text-pop">Disponible dans tes enveloppes</p>
+          <p className={`mt-1 font-manga text-[clamp(3.2rem,13vw,4.8rem)] leading-none tabular [text-shadow:3px_3px_0_var(--accent)] ${available < 0 ? "text-over" : ""}`}>
             {eur(available)}
           </p>
-          <p className="mt-1.5 text-sm text-surface/70">
+          <p className="mt-1.5 text-sm text-on-hero/75">
             {eur(used)} dépensés sur {eur(budget)}
           </p>
           <div className="relative mt-5 mb-3 flex h-[30px] gap-1.5">
@@ -54,9 +66,9 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                   </div>
                 );
               })}
-            {progress > 0 && progress < 1 && <div className="absolute -top-1.5 -bottom-1.5 w-[3px] rounded bg-surface" style={{ left: `${progress * 100}%` }} title="Aujourd’hui" />}
+            {progress > 0 && progress < 1 && <div className="absolute -top-1.5 -bottom-1.5 w-[3px] rounded bg-on-hero" style={{ left: `${progress * 100}%` }} title="Aujourd’hui" />}
           </div>
-          <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[0.82rem] text-surface/75">
+          <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[0.82rem] text-on-hero/80">
             {envs
               .filter((c) => c.budget > 0)
               .map((c) => (
@@ -67,6 +79,8 @@ export function Home({ data, month }: { data: AppData; month: string }) {
               ))}
           </div>
         </section>
+
+        <MascotSays mood={mood}>{line}</MascotSays>
 
         {Math.abs(rest) >= 0.01 && <AllocateAlert value={rest} />}
 
@@ -116,9 +130,9 @@ export function Home({ data, month }: { data: AppData; month: string }) {
 
       <div className="grid gap-4">
         <Panel title="Épargne">
-          <div className="mb-4 flex items-baseline justify-between rounded-2xl bg-save-soft px-4 py-3 text-save">
+          <div className="mb-4 flex items-baseline justify-between rounded-2xl border-2 border-save bg-save-soft px-4 py-3 text-save">
             <span>Épargne totale</span>
-            <b className="font-display text-2xl tabular">{eur(totalSaved(data))}</b>
+            <b className="font-manga text-3xl tabular">{eur(totalSaved(data))}</b>
           </div>
           {data.savingsMonthly > 0 && (
             <div className="mb-4 flex items-center gap-3">
@@ -126,7 +140,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                 type="button"
                 onClick={toggleSavings}
                 aria-pressed={m.savingsDone > 0}
-                className={`grid h-7 w-7 flex-none place-items-center rounded-lg border-2 text-on-accent ${m.savingsDone > 0 ? "border-save bg-save" : "border-line"}`}
+                className={`grid h-7 w-7 flex-none place-items-center rounded-lg border-2 text-on-accent ${m.savingsDone > 0 ? "power-up border-ink bg-save" : "border-ink"}`}
               >
                 {m.savingsDone > 0 ? "✓" : ""}
               </button>
@@ -137,18 +151,18 @@ export function Home({ data, month }: { data: AppData; month: string }) {
               <b className="font-display tabular">{eur(m.savingsDone || data.savingsMonthly)}</b>
             </div>
           )}
-          {goalProgress(data).map((g) => (
+          {goals.map((g) => (
             <div key={g.goal.id} className="mb-4 last:mb-0">
               <div className="flex items-baseline justify-between gap-3">
                 <span>{g.goal.name}</span>
                 <b className="font-display text-xl tabular">{eur0(g.reached)}</b>
               </div>
               <div className="my-2">
-                <Bar value={g.goal.target ? g.reached / g.goal.target : 0} color="var(--save)" height={10} />
+                <Bar value={g.goal.target ? g.reached / g.goal.target : 0} color="var(--save)" height={14} />
               </div>
               <p className="text-sm text-ink-2">
                 {g.done
-                  ? "Objectif atteint."
+                  ? "Objectif atteint. Sugoi !"
                   : g.monthsLeft > 0
                     ? `Objectif ${eur0(g.goal.target)}, encore ${g.monthsLeft} mois : ${eur0(g.perMonth)} par mois.`
                     : `Objectif ${eur0(g.goal.target)}, échéance dépassée.`}
@@ -168,7 +182,7 @@ function QuickTip({ data, month }: { data: AppData; month: string }) {
   if (m.expenses.length > 0) return null;
   return (
     <Panel>
-      <p className="text-[0.95rem]">Yallah, note ta première dépense avec le bouton jaune. Montant, enveloppe, libellé : c’est tout.</p>
+      <p className="text-[0.95rem]">Yosh ! Note ta première dépense avec le bouton cyan. Montant, enveloppe, libellé : c’est tout.</p>
       <Button variant="ghost" className="mt-3" onClick={() => document.querySelector<HTMLButtonElement>('[aria-label="Ajouter une dépense"]')?.click()}>
         Ajouter une dépense
       </Button>

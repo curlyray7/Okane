@@ -24,7 +24,7 @@ export function Review({ data, month }: { data: AppData; month: string }) {
     <div className="grid items-start gap-4 min-[860px]:grid-cols-[1.1fr_.9fr]">
       <div className="grid gap-4">
         {r.overruns.length === 0 ? (
-          <Alert tone="ok">Aucune enveloppe dépassée en {monthLabel(month)}.</Alert>
+          <Alert tone="ok">Aucune enveloppe dépassée en {monthLabel(month)}. Yosh !</Alert>
         ) : (
           <Alert tone="bad">
             {r.overruns.length === 1 ? "Enveloppe dépassée : " : `${r.overruns.length} enveloppes dépassées : `}
@@ -142,10 +142,10 @@ function History({ data, month }: { data: AppData; month: string }) {
             <g key={r.k}>
               {r.has ? (
                 <>
-                  <rect x={x - bw - 2} y={y(r.spent)} width={bw} height={H - pad - y(r.spent)} rx={4} fill="var(--accent)">
+                  <rect x={x - bw - 2} y={y(r.spent)} width={bw} height={H - pad - y(r.spent)} rx={4} fill="var(--accent)" stroke="var(--ink)" strokeWidth={2}>
                     <title>{`${monthShort(r.k)} : ${eur(r.spent)} dépensés`}</title>
                   </rect>
-                  <rect x={x + 2} y={y(r.saved)} width={bw} height={H - pad - y(r.saved)} rx={4} fill="var(--save)">
+                  <rect x={x + 2} y={y(r.saved)} width={bw} height={H - pad - y(r.saved)} rx={4} fill="var(--pop)" stroke="var(--ink)" strokeWidth={2}>
                     <title>{`${monthShort(r.k)} : ${eur(r.saved)} épargnés`}</title>
                   </rect>
                 </>
@@ -165,7 +165,7 @@ function History({ data, month }: { data: AppData; month: string }) {
           Dépenses (charges + enveloppes)
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <i className="inline-block h-2.5 w-2.5 rounded-[3px] bg-save" />
+          <i className="inline-block h-2.5 w-2.5 rounded-[3px] bg-pop" />
           Épargne versée
         </span>
       </div>

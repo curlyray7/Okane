@@ -1,5 +1,5 @@
 // Service worker minimal : l'appli reste utilisable hors ligne.
-const CACHE = "yallah-v1";
+const CACHE = "okane-v1";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/"])).then(() => self.skipWaiting()));
@@ -36,7 +36,8 @@ self.addEventListener("fetch", (event) => {
   // Fichiers statiques et polices : cache d'abord.
   const cacheable =
     (url.origin === self.location.origin &&
-      (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/"))) ||
+      (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/") ||
+        url.pathname.startsWith("/mascotte/"))) ||
     url.hostname === "fonts.googleapis.com" ||
     url.hostname === "fonts.gstatic.com";
   if (cacheable) {

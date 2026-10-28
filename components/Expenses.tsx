@@ -35,13 +35,13 @@ export function Expenses({ data, month, onEdit, onAdd }: { data: AppData; month:
       </Panel>
       {[...byDay.entries()].map(([day, items]) => (
         <div key={day} className="mb-4">
-          <h3 className="mb-1.5 text-sm font-semibold text-ink-2 first-letter:uppercase">{dayLabel(day)}</h3>
+          <h3 className="mb-1.5 font-manga text-lg text-accent first-letter:uppercase">{dayLabel(day)}</h3>
           {items.map((e) => (
             <button
               key={e.id}
               type="button"
               onClick={() => onEdit(e.id)}
-              className="mb-1.5 flex w-full items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left"
+              className="mb-2 flex w-full items-center gap-3 rounded-xl border-2 border-ink bg-surface px-3 py-2.5 text-left shadow-ink-sm transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
             >
               <i className="inline-block h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: colorFor(data, e.categoryId) }} />
               <span className="min-w-0 flex-1">

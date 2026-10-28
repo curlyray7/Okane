@@ -1,6 +1,6 @@
-# Yallah
+# Okane
 
-Fini le balagan dans tes comptes. Appli web de budget par enveloppes : chaque euro reçoit une mission (charges fixes, enveloppes de dépenses, épargne), puis on suit ses dépenses et ses objectifs d’épargne mois par mois.
+Ton budget, niveau boss. Appli web de budget par enveloppes : chaque euro reçoit une mission (charges fixes, enveloppes de dépenses, épargne), puis on suit ses dépenses et ses objectifs d’épargne mois par mois.
 
 - Aucun compte, aucune connexion bancaire : les données restent dans le navigateur (localStorage).
 - Questionnaire guidé au premier lancement, rien n’est pré-rempli.

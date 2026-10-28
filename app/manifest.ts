@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Yallah : ton budget, sans balagan",
-    short_name: "Yallah",
+    name: "Okane : ton budget, niveau boss",
+    short_name: "Okane",
     description: "Budget par enveloppes, sans compte, données sur ton appareil.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f4f4f1",
-    theme_color: "#1f4fd1",
+    background_color: "#f6f5fb",
+    theme_color: "#6d28d9",
     lang: "fr",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

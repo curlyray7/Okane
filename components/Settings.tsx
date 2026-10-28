@@ -34,7 +34,7 @@ export function Settings({ data }: { data: AppData }) {
 
   return (
     <div className="mx-auto grid max-w-[760px] gap-4">
-      <h1 className="font-display text-2xl font-semibold">Réglages</h1>
+      <h1 className="font-manga text-[2rem] leading-none">Réglages</h1>
       <p className="-mt-2 text-sm text-ink-2">Modifie ce que tu veux, puis enregistre en bas de l’écran.</p>
       <AllocateAlert value={totals.toAllocate} />
 
@@ -80,7 +80,7 @@ export function Settings({ data }: { data: AppData }) {
       )}
 
       {dirty && (
-      <div className="sticky z-10 flex gap-2.5 rounded-2xl border border-line bg-surface p-3" style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
+      <div className="sticky z-10 flex gap-2.5 rounded-2xl border-2 border-ink bg-surface p-3 shadow-ink" style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
         <Button variant="ghost" className="flex-1" onClick={() => { setDraft(initial); setErrors([]); }}>
           Annuler
         </Button>

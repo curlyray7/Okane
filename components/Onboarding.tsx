@@ -199,11 +199,8 @@ export function Onboarding() {
 export function Logo() {
   return (
     <div className="flex items-center gap-3">
-      <svg width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">
-        <rect x="1" y="1" width="40" height="40" rx="12" fill="var(--accent)" stroke="var(--ink)" strokeWidth="2" />
-        <circle cx="21" cy="21" r="11" fill="var(--pop)" stroke="var(--ink)" strokeWidth="2" />
-        <path d="M23 12l-6 10h5l-2 8 6-10h-5z" fill="var(--ink)" />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/icons/icon-192.png" alt="" width={42} height={42} className="h-[42px] w-[42px] rounded-xl" />
       <span className="font-manga text-3xl">Okane</span>
     </div>
   );

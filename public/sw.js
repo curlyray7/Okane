@@ -1,5 +1,5 @@
 // Service worker minimal : l'appli reste utilisable hors ligne.
-const CACHE = "okane-v1";
+const CACHE = "okane-v2";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/"])).then(() => self.skipWaiting()));

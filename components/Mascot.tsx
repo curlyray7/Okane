@@ -5,10 +5,14 @@ import { useState } from "react";
 export type Mood = "neutre" | "contente" | "inquiete" | "victoire";
 
 /** Mascotte : dessins dans public/mascotte/<mood>.png, avec un visage SVG de secours tant qu’ils manquent. */
-export function Mascot({ mood, size = 96, className = "" }: { mood: Mood; size?: number; className?: string }) {
+/** `framed` : dans un médaillon rond, pour que la tenue sombre se détache aussi en thème sombre. */
+export function Mascot({ mood, size = 96, framed = false, className = "" }: { mood: Mood; size?: number; framed?: boolean; className?: string }) {
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   return (
-    <div className={`relative flex-none ${mood === "victoire" ? "power-up" : "float"} ${className}`} style={{ width: size, height: size }}>
+    <div
+      className={`relative flex-none ${framed ? "overflow-hidden rounded-full border-2 border-ink bg-accent-soft shadow-ink-sm" : ""} ${mood === "victoire" ? "power-up" : "float"} ${className}`}
+      style={{ width: size, height: size }}
+    >
       {missing[mood] ? (
         <Fallback mood={mood} />
       ) : (
@@ -19,7 +23,7 @@ export function Mascot({ mood, size = 96, className = "" }: { mood: Mood; size?:
           alt=""
           width={size}
           height={size}
-          className="h-full w-full object-contain"
+          className={`h-full w-full ${framed ? "object-cover object-top" : "object-contain"}`}
           onError={() => setMissing((m) => ({ ...m, [mood]: true }))}
         />
       )}
@@ -65,10 +69,10 @@ function Fallback({ mood }: { mood: Mood }) {
 }
 
 /** Mascotte + bulle de dialogue. */
-export function MascotSays({ mood, children, size = 84 }: { mood: Mood; children: React.ReactNode; size?: number }) {
+export function MascotSays({ mood, children, size = 92 }: { mood: Mood; children: React.ReactNode; size?: number }) {
   return (
     <div className="flex items-end gap-2">
-      <Mascot mood={mood} size={size} />
+      <Mascot mood={mood} size={size} framed />
       <div className="relative mb-3 min-w-0 flex-1 rounded-2xl border-2 border-ink bg-surface px-3.5 py-2.5 text-[0.93rem] text-ink shadow-ink-sm">
         <span className="absolute bottom-3 -left-[9px] h-4 w-4 rotate-45 border-b-2 border-l-2 border-ink bg-surface" aria-hidden="true" />
         <span className="relative">{children}</span>

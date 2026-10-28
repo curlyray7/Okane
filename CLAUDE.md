@@ -22,7 +22,7 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
   - `ExpenseSheet` : saisie montant + enveloppe + libellé ; la date est automatique.
   - `editors.tsx` + `draft.ts` : édition des listes et validation, partagés par Onboarding et Settings.
   - `ui.tsx` : Button, Panel, Bar, Alert, MoneyInput, Toast.
-  - `Mascot.tsx` : mascotte (`neutre` | `contente` | `inquiete` | `victoire`) lue dans `public/mascotte/<mood>.png`, visage SVG de secours si l’image manque. `MascotSays` = mascotte + bulle. Sur l’accueil, l’humeur suit le budget (dépassement → inquiète, objectif atteint → victoire, épargne cochée → contente).
+  - `Mascot.tsx` : mascotte (`neutre` | `contente` | `inquiete` | `victoire`) lue dans `public/mascotte/<mood>.png` (480 px, originaux pleine taille dans `design/mascotte/`), visage SVG de secours si l’image manque. `MascotSays` = mascotte en médaillon rond + bulle. Sur l’accueil, l’humeur suit le budget (dépassement → inquiète, objectif atteint → victoire, épargne cochée → contente).
 - `lib/` :
   - `types.ts` : `AppData` { incomes, categories (kind `fixed` | `envelope`), goals, savingsMonthly, margin, initialSavings, months[YYYY-MM] }.
   - `store.ts` : `useData` / `setData` / `updateData` via `useSyncExternalStore`.

@@ -9,7 +9,7 @@
 
 ## Stack
 Next.js 16.4 (App Router), React 19.3, TypeScript strict, Tailwind CSS 4.3 (@tailwindcss/postcss).
-Aucune autre dépendance runtime : ne pas en ajouter sans raison forte.
+Seule autre dépendance runtime : `pdfjs-dist` (build legacy, version exacte), pour lire les relevés PDF ; chargée à la demande, uniquement quand on importe un PDF. Son worker est copié dans `public/pdf.worker.min.mjs` par `npm run pdf-worker` (lancé avant `dev` et `build`, fichier ignoré par Git). Ne pas ajouter d’autre dépendance sans raison forte.
 Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
 
 ## Structure
@@ -30,13 +30,14 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
   - `calc.ts` : tous les calculs (reste à répartir, dépensé par enveloppe, épargne totale, objectifs remplis par ordre de priorité, bilan).
   - `format.ts` : `eur`, `parseAmount` (accepte la virgule), helpers de mois.
   - `bankImport.ts` : lecture des relevés (CSV avec détection des colonnes, séparateur et encodage Windows-1252 ; OFX), libellés normalisés, règles de classement, détection des doublons.
+  - `pdfStatement.ts` : relevés PDF. Lignes reconstruites à partir des positions du texte ; une opération = ligne qui commence par une date et porte un montant ; débit/crédit selon la colonne (en-têtes « Débit »/« Crédit ») ou le signe ; arrêt au « TOTAL DES OPÉRATIONS » / « NOUVEAU SOLDE » (les récapitulatifs qui suivent ne sont pas des opérations) ; texte pivoté de la marge ignoré. Vérifié sur un relevé Crédit Mutuel de Bretagne.
 
 ## Règles métier
 - Les charges fixes comptent comme dépensées automatiquement : on ne saisit que les dépenses d'enveloppes.
 - L'épargne du mois est confirmée par une case à cocher (`savingsDone` stocke le montant).
 - À partir du 25, le bilan propose de verser le non-dépensé des enveloppes en « épargne bonus » (`bonus`).
 - Supprimer une catégorie garde ses dépenses (affichées « Catégorie supprimée »).
-- Import de relevé : tout se passe dans le navigateur, rien n’est envoyé. Seuls les débits sont proposés (crédits ignorés). Proposition par ligne : doublon d’une saisie manuelle (même montant à 3 jours près) → ignorer ; règle apprise (`rules`, mot-clé du libellé → enveloppe ou `ignore`) ; libellé contenant le nom d’une charge fixe → ignorer ; sinon « À classer » (non importé). Chaque dépense importée garde `importId` ; les lignes ignorées vont dans `ignoredImports`, pour ne jamais reproposer une ligne déjà traitée. Les choix modifiés deviennent des règles, visibles et supprimables dans les Réglages.
+- Import de relevé (PDF, CSV ou OFX) : tout se passe dans le navigateur, rien n’est envoyé. Seuls les débits sont proposés (crédits ignorés). Proposition par ligne : doublon d’une saisie manuelle (même montant à 3 jours près) → ignorer ; règle apprise (`rules`, mot-clé du libellé → enveloppe ou `ignore`) ; libellé contenant le nom d’une charge fixe → ignorer ; sinon « À classer » (non importé). Chaque dépense importée garde `importId` ; les lignes ignorées vont dans `ignoredImports`, pour ne jamais reproposer une ligne déjà traitée. Les choix modifiés deviennent des règles, visibles et supprimables dans les Réglages.
 
 ## Design (anime shōnen, effets dosés)
 - Violet électrique `--accent`, cyan `--pop` (bouton +, highlights), bloc héros `--hero` (violet nuit) avec `--on-hero`, noir `--ink`. Rouge `--over` réservé aux dépassements.

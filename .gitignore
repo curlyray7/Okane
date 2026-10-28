@@ -7,3 +7,5 @@ next-env.d.ts
 .DS_Store
 .env*
 .claude/
+# Copié depuis pdfjs-dist par npm run pdf-worker
+public/pdf.worker.min.mjs

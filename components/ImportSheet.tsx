@@ -121,7 +121,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
 
         {!rows ? (
           <div className="overflow-auto px-[18px] pb-[18px]">
-            <MascotSays mood="neutre">Exporte ton relevé depuis le site de ta banque, je range les dépenses dans tes enveloppes. Yosh !</MascotSays>
+            <MascotSays mood="neutre">Donne-moi ton relevé de compte, je range les dépenses dans tes enveloppes. Yosh !</MascotSays>
             <label
               className="mt-4 grid cursor-pointer place-items-center gap-2 rounded-2xl border-2 border-dashed border-accent bg-accent-soft px-4 py-8 text-center"
               onDragOver={(e) => e.preventDefault()}
@@ -131,8 +131,8 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
               }}
             >
               <span className="font-manga text-2xl text-accent">Choisir un fichier</span>
-              <span className="text-sm text-ink-2">CSV ou OFX · reste sur ton appareil, rien n’est envoyé</span>
-              <input type="file" accept=".csv,.ofx,.qfx,.txt,text/csv" className="sr-only" onChange={(e) => load(e.target.files?.[0])} />
+              <span className="text-sm text-ink-2">Relevé PDF, CSV ou OFX · lu sur ton appareil, rien n’est envoyé</span>
+              <input type="file" accept=".pdf,.csv,.ofx,.qfx,.txt,application/pdf,text/csv" className="sr-only" onChange={(e) => load(e.target.files?.[0])} />
             </label>
             {error && (
               <div className="mt-4">
@@ -142,9 +142,9 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
             <details className="mt-4 text-sm text-ink-2">
               <summary className="cursor-pointer font-semibold text-ink">Où trouver mon relevé ?</summary>
               <p className="mt-2">
-                Sur le site ou l’appli de ta banque, ouvre ton compte courant, puis cherche « Exporter », « Télécharger les opérations » ou
-                « Relevé au format CSV / OFX / Money ». Choisis la période voulue. Les revenus et remboursements sont ignorés, seules les
-                dépenses sont proposées.
+                Le plus simple : le relevé de compte mensuel en PDF, dans l’espace « Documents » ou « e-Relevés » de ta banque. Un export
+                CSV ou OFX des opérations marche aussi. Évite les convertisseurs en ligne : ils reçoivent tout ton relevé. Les revenus et
+                remboursements sont ignorés, seules les dépenses sont proposées.
               </p>
             </details>
           </div>

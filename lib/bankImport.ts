@@ -18,9 +18,17 @@ export interface ParseResult {
 
 export const IGNORE = "ignore";
 
-/** Lit le fichier en UTF-8, ou en Windows-1252 (export de la plupart des banques françaises). */
+/** Lit un relevé PDF, ou un export texte en UTF-8 / Windows-1252 (la plupart des banques françaises). */
 export async function readStatement(file: File): Promise<ParseResult> {
   const buf = await file.arrayBuffer();
+  if (new TextDecoder().decode(buf.slice(0, 5)) === "%PDF-") {
+    const { extractPdfItems, parsePdfStatement } = await import("./pdfStatement");
+    try {
+      return parsePdfStatement(await extractPdfItems(buf));
+    } catch {
+      return { lines: [], credits: 0, error: "Impossible de lire ce PDF. S’il est protégé par un mot de passe, exporte-le à nouveau sans protection." };
+    }
+  }
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
@@ -204,7 +212,7 @@ export function parseBankAmount(v: string): number | null {
 }
 
 /** Référence stable pour chaque ligne (FITID en OFX, sinon date + montant + libellé + rang). */
-function withRefs(lines: BankLine[]) {
+export function withRefs(lines: BankLine[]) {
   const seen = new Map<string, number>();
   return lines.map((l) => {
     if (l.ref) return { ...l, ref: `ofx:${l.ref}` };

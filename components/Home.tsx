@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { AppData } from "@/lib/types";
 import { colorFor, envelopeBudgets, envelopeCats, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
 import { daysInMonth, eur, eur0, monthKey, ofMonth, round2 } from "@/lib/format";
@@ -8,18 +9,24 @@ import { AllocateAlert } from "./Onboarding";
 import { Bar, Button, Panel, useToast } from "./ui";
 import { MascotSays, type Mood } from "./Mascot";
 import { SafetyTip } from "./SafetyTip";
+import { MoveSheet } from "./MoveSheet";
 
 export function Home({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
+  const [move, setMove] = useState<{ to?: string; amount?: number } | null>(null);
   const envs = envelopeCats(data);
   const spent = spentByCategory(data, month);
-  // Budget du mois : budget prévu + rentrées en plus données à l’enveloppe.
+  // Budget du mois : budget prévu + rentrées en plus données à l’enveloppe ± argent déplacé.
   const budgets = envelopeBudgets(data, month);
   const budget = sumBy(envs, (c) => budgets[c.id]);
   const used = sumBy(envs, (c) => spent[c.id] ?? 0);
   const available = budget - used;
   const now = monthKey();
   const progress = month === now ? (new Date().getDate() - 0.5) / daysInMonth(month) : month < now ? 1 : 0;
+  // Ce qu’on peut dépenser par jour d’ici la fin du mois, aujourd’hui compris.
+  const daysLeft = month === now ? daysInMonth(month) - new Date().getDate() + 1 : 0;
+  const perDay = daysLeft > 0 && available > 0 ? round2(available / daysLeft) : 0;
+  const lastDay = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" }).format(new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0));
   const scale = Math.max(budget, used, 1);
   const fixed = fixedCats(data);
   const m = getMonth(data, month);
@@ -29,7 +36,12 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const doneGoal = goals.find((g) => g.done);
   const [mood, line]: [Mood, string] =
     available < 0 || overCat
-      ? ["inquiete", overCat ? `Aïe, « ${overCat.name} » est dépassée. On se reprend, ganbatte !` : "Aïe, tes enveloppes sont dans le rouge. On se reprend, ganbatte !"]
+      ? [
+          "inquiete",
+          overCat
+            ? `Aïe, « ${overCat.name} » est dépassée. Comble-la avec une autre enveloppe, ganbatte !`
+            : "Aïe, tes enveloppes sont dans le rouge. On se reprend, ganbatte !",
+        ]
       : doneGoal
         ? ["victoire", `Sugoi ! Objectif « ${doneGoal.goal.name} » atteint.`]
         : m.savingsDone > 0
@@ -45,7 +57,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   };
 
   return (
-    <div className="grid items-start gap-4 min-[860px]:grid-cols-[1.15fr_.85fr]">
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 min-[860px]:grid-cols-[1.15fr_.85fr]">
       <div className="grid gap-4">
         <section aria-label="Disponible ce mois" className="speed-lines rounded-[24px] border-2 border-ink bg-hero px-5 pt-5 pb-5 text-on-hero shadow-ink">
           <p className="font-manga text-xl text-pop">Disponible dans tes enveloppes</p>
@@ -55,6 +67,11 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           <p className="mt-1.5 text-sm text-on-hero/75">
             {eur(used)} dépensés sur {eur(budget)}
           </p>
+          {perDay > 0 && (
+            <p className="mt-2 inline-block rounded-full border-2 border-pop px-3 py-1 text-sm font-semibold text-pop">
+              ≈ {eur(perDay)} par jour jusqu’au {lastDay}
+            </p>
+          )}
           <div className="relative mt-5 mb-3 flex h-[30px] gap-1.5">
             {envs
               .filter((c) => budgets[c.id] > 0 || (spent[c.id] ?? 0) > 0)
@@ -97,12 +114,21 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           />
         )}
 
-        <Panel title="Enveloppes">
+        <Panel
+          title="Enveloppes"
+          action={
+            envs.length >= 2 && (
+              <Button variant="ghost" className="px-3 py-1.5 text-sm" onClick={() => setMove({})}>
+                Déplacer
+              </Button>
+            )
+          }
+        >
           {envs.length === 0 && <p className="text-ink-2">Aucune enveloppe. Crée-en une dans les réglages.</p>}
           {envs.map((c) => {
             const s = spent[c.id] ?? 0;
             const st = envelopeStatus(c, s, budgets[c.id]);
-            const bonus = round2(budgets[c.id] - c.budget);
+            const changed = Math.abs(budgets[c.id] - c.budget) >= 0.01;
             const col = st.level === "over" ? "var(--over)" : st.level === "near" ? "var(--warn)" : colorFor(data, c.id);
             return (
               <div key={c.id} className="border-b border-line py-3 last:border-b-0">
@@ -122,9 +148,14 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                   <span>{eur(s)} dépensés</span>
                   <span>
                     sur {eur(budgets[c.id])}
-                    {bonus > 0 && <span className="text-save"> (dont +{eur(bonus)} en plus)</span>}
+                    {changed && <span className={budgets[c.id] > c.budget ? "text-save" : ""}> (prévu {eur(c.budget)})</span>}
                   </span>
                 </div>
+                {st.left < 0 && envs.length >= 2 && (
+                  <Button variant="ghost" className="mt-2 px-3 py-1.5 text-left text-sm !whitespace-normal" onClick={() => setMove({ to: c.id, amount: -st.left })}>
+                    Combler les {eur(-st.left)} avec une autre enveloppe
+                  </Button>
+                )}
               </div>
             );
           })}
@@ -190,6 +221,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
         </Panel>
         <SafetyTip data={data} />
         <QuickTip data={data} month={month} />
+        {move && <MoveSheet data={data} month={month} to={move.to} amount={move.amount} onClose={() => setMove(null)} />}
       </div>
     </div>
   );

@@ -48,6 +48,15 @@ export interface Extra {
 
 export const SAVINGS = "savings";
 
+/** Argent déplacé d'une enveloppe à une autre, pour ce mois seulement */
+export interface Move {
+  id: string;
+  from: string;
+  to: string;
+  amount: number;
+  createdAt: number;
+}
+
 export interface MonthData {
   expenses: Expense[];
   /** Montant d'épargne mensuelle confirmé comme versé (0 = pas encore) */
@@ -55,6 +64,7 @@ export interface MonthData {
   /** Épargne bonus issue du non-dépensé */
   bonus: number;
   extras?: Extra[];
+  moves?: Move[];
 }
 
 /**

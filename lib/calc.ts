@@ -26,11 +26,16 @@ export const extraSavings = (m: MonthData) => sumBy((m.extras ?? []).filter((x) 
 
 export const savedInMonth = (m: MonthData) => round2((m.savingsDone || 0) + (m.bonus || 0) + extraSavings(m));
 
-/** Budget de chaque enveloppe pour ce mois : budget prévu + rentrées en plus qui lui sont données. */
+/** Budget de chaque enveloppe pour ce mois : budget prévu + rentrées en plus qui lui sont données ± argent déplacé. */
 export function envelopeBudgets(d: AppData, key: string) {
   const map: Record<string, number> = {};
   for (const c of envelopeCats(d)) map[c.id] = c.budget;
-  for (const x of getMonth(d, key).extras ?? []) if (x.target in map) map[x.target] = round2(map[x.target] + x.amount);
+  const m = getMonth(d, key);
+  for (const x of m.extras ?? []) if (x.target in map) map[x.target] = round2(map[x.target] + x.amount);
+  for (const mv of m.moves ?? []) {
+    if (mv.from in map) map[mv.from] = round2(map[mv.from] - mv.amount);
+    if (mv.to in map) map[mv.to] = round2(map[mv.to] + mv.amount);
+  }
   return map;
 }
 

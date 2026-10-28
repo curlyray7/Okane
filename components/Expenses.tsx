@@ -1,0 +1,58 @@
+"use client";
+
+import type { AppData, Expense } from "@/lib/types";
+import { categoryName, colorFor, getMonth, sumBy } from "@/lib/calc";
+import { dayLabel, eur, monthLabel } from "@/lib/format";
+import { Button, Panel } from "./ui";
+
+export function Expenses({ data, month, onEdit, onAdd }: { data: AppData; month: string; onEdit: (id: string) => void; onAdd: () => void }) {
+  const list = getMonth(data, month)
+    .expenses.slice()
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+
+  if (list.length === 0)
+    return (
+      <Panel className="py-10 text-center">
+        <p className="text-ink-2">Aucune dépense en {monthLabel(month)}.</p>
+        <Button variant="accent" className="mt-5" onClick={onAdd}>
+          Ajouter une dépense
+        </Button>
+      </Panel>
+    );
+
+  const byDay = new Map<string, Expense[]>();
+  for (const e of list) byDay.set(e.date, [...(byDay.get(e.date) ?? []), e]);
+
+  return (
+    <div className="mx-auto max-w-[640px]">
+      <Panel className="mb-4">
+        <div className="flex justify-between">
+          <span>
+            {list.length} dépense{list.length > 1 ? "s" : ""}
+          </span>
+          <b className="font-display tabular">{eur(sumBy(list, (e) => e.amount))}</b>
+        </div>
+      </Panel>
+      {[...byDay.entries()].map(([day, items]) => (
+        <div key={day} className="mb-4">
+          <h3 className="mb-1.5 text-sm font-semibold text-ink-2 first-letter:uppercase">{dayLabel(day)}</h3>
+          {items.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => onEdit(e.id)}
+              className="mb-1.5 flex w-full items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left"
+            >
+              <i className="inline-block h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: colorFor(data, e.categoryId) }} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{e.label || categoryName(data, e.categoryId)}</span>
+                <small className="block text-[0.8rem] text-ink-2">{categoryName(data, e.categoryId)}</small>
+              </span>
+              <span className="font-display font-semibold tabular">{eur(e.amount)}</span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}

@@ -29,6 +29,8 @@ export interface Expense {
   categoryId: string;
   label: string;
   createdAt: number;
+  /** Identifiant de la ligne de relevé importée, pour ne pas l'importer deux fois */
+  importId?: string;
 }
 
 export interface MonthData {
@@ -37,6 +39,13 @@ export interface MonthData {
   savingsDone: number;
   /** Épargne bonus issue du non-dépensé */
   bonus: number;
+}
+
+/** Règle de classement des relevés : un mot-clé du libellé → une enveloppe, ou « ignore » */
+export interface ImportRule {
+  id: string;
+  pattern: string;
+  target: string;
 }
 
 export interface AppData {
@@ -51,4 +60,7 @@ export interface AppData {
   margin: number;
   initialSavings: number;
   months: Record<string, MonthData>;
+  rules?: ImportRule[];
+  /** Lignes de relevé déjà écartées à l'import, pour ne pas les reproposer */
+  ignoredImports?: string[];
 }

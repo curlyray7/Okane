@@ -5,7 +5,7 @@ import { categoryName, colorFor, getMonth, sumBy } from "@/lib/calc";
 import { dayLabel, eur, monthLabel } from "@/lib/format";
 import { Button, Panel } from "./ui";
 
-export function Expenses({ data, month, onEdit, onAdd }: { data: AppData; month: string; onEdit: (id: string) => void; onAdd: () => void }) {
+export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppData; month: string; onEdit: (id: string) => void; onAdd: () => void; onImport: () => void }) {
   const list = getMonth(data, month)
     .expenses.slice()
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
@@ -14,9 +14,14 @@ export function Expenses({ data, month, onEdit, onAdd }: { data: AppData; month:
     return (
       <Panel className="py-10 text-center">
         <p className="text-ink-2">Aucune dépense en {monthLabel(month)}.</p>
-        <Button variant="accent" className="mt-5" onClick={onAdd}>
-          Ajouter une dépense
-        </Button>
+        <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+          <Button variant="accent" onClick={onAdd}>
+            Ajouter une dépense
+          </Button>
+          <Button variant="ghost" onClick={onImport}>
+            Importer un relevé
+          </Button>
+        </div>
       </Panel>
     );
 
@@ -32,6 +37,9 @@ export function Expenses({ data, month, onEdit, onAdd }: { data: AppData; month:
           </span>
           <b className="font-display tabular">{eur(sumBy(list, (e) => e.amount))}</b>
         </div>
+        <Button variant="ghost" className="mt-3 w-full" onClick={onImport}>
+          Importer un relevé bancaire
+        </Button>
       </Panel>
       {[...byDay.entries()].map(([day, items]) => (
         <div key={day} className="mb-4">
@@ -46,7 +54,10 @@ export function Expenses({ data, month, onEdit, onAdd }: { data: AppData; month:
               <i className="inline-block h-2.5 w-2.5 flex-none rounded-[3px]" style={{ background: colorFor(data, e.categoryId) }} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{e.label || categoryName(data, e.categoryId)}</span>
-                <small className="block text-[0.8rem] text-ink-2">{categoryName(data, e.categoryId)}</small>
+                <small className="block text-[0.8rem] text-ink-2">
+                  {categoryName(data, e.categoryId)}
+                  {e.importId && " · relevé"}
+                </small>
               </span>
               <span className="font-display font-semibold tabular">{eur(e.amount)}</span>
             </button>

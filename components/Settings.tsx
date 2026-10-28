@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { AppData } from "@/lib/types";
-import { setData } from "@/lib/store";
+import { setData, updateData } from "@/lib/store";
+import { categoryName } from "@/lib/calc";
+import { IGNORE } from "@/lib/bankImport";
 import { eur } from "@/lib/format";
 import { AllocateAlert } from "./Onboarding";
 import { GoalsEditor, RowsEditor } from "./editors";
@@ -89,6 +91,26 @@ export function Settings({ data }: { data: AppData }) {
           Enregistrer
         </Button>
       </div>
+      )}
+
+      {(data.rules?.length ?? 0) > 0 && (
+        <Panel title="Règles d’import">
+          <p className="mb-2 text-sm text-ink-2">Apprises à chaque relevé importé : un mot du libellé envoie la dépense dans une enveloppe.</p>
+          {data.rules!.map((r) => (
+            <div key={r.id} className="flex items-center gap-3 border-b border-line py-2 last:border-b-0">
+              <span className="min-w-0 flex-1 truncate font-semibold">{r.pattern}</span>
+              <span className="text-sm text-ink-2">→ {r.target === IGNORE ? "Ignorer" : categoryName(data, r.target)}</span>
+              <button
+                type="button"
+                aria-label={`Supprimer la règle ${r.pattern}`}
+                className="h-8 w-8 flex-none rounded-full hover:bg-surface-2"
+                onClick={() => updateData((d) => void (d.rules = (d.rules ?? []).filter((x) => x.id !== r.id)))}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </Panel>
       )}
 
       <Panel title="Données">

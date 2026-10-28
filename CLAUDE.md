@@ -20,20 +20,23 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
   - `Shell` : navigation par mois + 4 onglets (`#accueil`, `#depenses`, `#bilan`, `#reglages`), bouton + cyan.
   - `Home`, `Expenses`, `Review` (bilan + historique 6 mois), `Settings` (brouillon + bouton Enregistrer).
   - `ExpenseSheet` : saisie montant + enveloppe + libellé ; la date est automatique.
+  - `ImportSheet` : import d’un relevé bancaire CSV/OFX (onglet Dépenses), revue ligne par ligne avant d’importer.
   - `editors.tsx` + `draft.ts` : édition des listes et validation, partagés par Onboarding et Settings.
   - `ui.tsx` : Button, Panel, Bar, Alert, MoneyInput, Toast.
   - `Mascot.tsx` : mascotte (`neutre` | `contente` | `inquiete` | `victoire` | `fierte`) lue dans `public/mascotte/<mood>.png` (480 px, originaux pleine taille dans `design/mascotte/`), visage SVG de secours si l’image manque. `MascotSays` = mascotte en médaillon rond + bulle. Sur l’accueil, l’humeur suit le budget (dépassement → inquiète, objectif atteint → victoire, épargne cochée → contente). `fierte` (drapeau israélien, kippa) apparaît au récap de l’onboarding quand chaque euro a sa mission, au bilan d’un mois terminé sans dépassement, et dans l’encart « Fait par… » des Réglages.
 - `lib/` :
-  - `types.ts` : `AppData` { incomes, categories (kind `fixed` | `envelope`), goals, savingsMonthly, margin, initialSavings, months[YYYY-MM] }.
+  - `types.ts` : `AppData` { incomes, categories (kind `fixed` | `envelope`), goals, savingsMonthly, margin, initialSavings, months[YYYY-MM], rules?, ignoredImports? }.
   - `store.ts` : `useData` / `setData` / `updateData` via `useSyncExternalStore`.
   - `calc.ts` : tous les calculs (reste à répartir, dépensé par enveloppe, épargne totale, objectifs remplis par ordre de priorité, bilan).
   - `format.ts` : `eur`, `parseAmount` (accepte la virgule), helpers de mois.
+  - `bankImport.ts` : lecture des relevés (CSV avec détection des colonnes, séparateur et encodage Windows-1252 ; OFX), libellés normalisés, règles de classement, détection des doublons.
 
 ## Règles métier
 - Les charges fixes comptent comme dépensées automatiquement : on ne saisit que les dépenses d'enveloppes.
 - L'épargne du mois est confirmée par une case à cocher (`savingsDone` stocke le montant).
 - À partir du 25, le bilan propose de verser le non-dépensé des enveloppes en « épargne bonus » (`bonus`).
 - Supprimer une catégorie garde ses dépenses (affichées « Catégorie supprimée »).
+- Import de relevé : tout se passe dans le navigateur, rien n’est envoyé. Seuls les débits sont proposés (crédits ignorés). Proposition par ligne : doublon d’une saisie manuelle (même montant à 3 jours près) → ignorer ; règle apprise (`rules`, mot-clé du libellé → enveloppe ou `ignore`) ; libellé contenant le nom d’une charge fixe → ignorer ; sinon « À classer » (non importé). Chaque dépense importée garde `importId` ; les lignes ignorées vont dans `ignoredImports`, pour ne jamais reproposer une ligne déjà traitée. Les choix modifiés deviennent des règles, visibles et supprimables dans les Réglages.
 
 ## Design (anime shōnen, effets dosés)
 - Violet électrique `--accent`, cyan `--pop` (bouton +, highlights), bloc héros `--hero` (violet nuit) avec `--on-hero`, noir `--ink`. Rouge `--over` réservé aux dépassements.
@@ -45,4 +48,4 @@ Commandes : `npm run dev`, `npm run build`, `npm run typecheck`.
 - Mobile d'abord, safe areas iOS gérées (`env(safe-area-inset-*)`).
 
 ## Hors périmètre V1 / pistes V2
-Export/import d'une sauvegarde JSON, comptes + synchro (Supabase), reste à vivre hebdo, virements récurrents à cocher, multi-devises.
+Export/import d'une sauvegarde JSON, comptes + synchro (Supabase), synchro bancaire via un agrégateur DSP2 (Powens, Bridge…) en réutilisant le moteur de `bankImport.ts`, reste à vivre hebdo, virements récurrents à cocher, multi-devises.

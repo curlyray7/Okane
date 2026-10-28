@@ -8,6 +8,7 @@ import { Expenses } from "./Expenses";
 import { Review } from "./Review";
 import { Settings } from "./Settings";
 import { ExpenseSheet } from "./ExpenseSheet";
+import { ImportSheet } from "./ImportSheet";
 
 const TABS = [
   { id: "accueil", label: "Accueil", icon: "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" },
@@ -21,6 +22,7 @@ export function Shell({ data }: { data: AppData }) {
   const [tab, setTab] = useState<Tab>("accueil");
   const [month, setMonth] = useState(monthKey());
   const [sheet, setSheet] = useState<{ open: boolean; id?: string }>({ open: false });
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     const fromHash = () => {
@@ -57,7 +59,7 @@ export function Shell({ data }: { data: AppData }) {
           </header>
         )}
         {tab === "accueil" && <Home data={data} month={month} />}
-        {tab === "depenses" && <Expenses data={data} month={month} onEdit={(id) => setSheet({ open: true, id })} onAdd={() => setSheet({ open: true })} />}
+        {tab === "depenses" && <Expenses data={data} month={month} onEdit={(id) => setSheet({ open: true, id })} onAdd={() => setSheet({ open: true })} onImport={() => setImporting(true)} />}
         {tab === "bilan" && <Review data={data} month={month} />}
         {tab === "reglages" && <Settings data={data} />}
       </div>
@@ -97,6 +99,7 @@ export function Shell({ data }: { data: AppData }) {
         </div>
       </nav>
 
+      {importing && <ImportSheet data={data} onClose={() => setImporting(false)} />}
       {sheet.open && <ExpenseSheet data={data} month={month} expenseId={sheet.id} onClose={() => setSheet({ open: false })} />}
     </>
   );

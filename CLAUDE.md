@@ -5,7 +5,7 @@
 - Principe : chaque euro reçoit une mission (charges fixes, enveloppes de dépenses, épargne). « Reste à répartir » doit tomber à 0 €.
 - Sans compte, sans backend : données dans le navigateur (localStorage, clé `yallah:v1`, gardée telle quelle depuis l’ancien nom Yallah pour ne pas perdre les données). Rien n'est pré-rempli.
 - PWA installable + hors ligne (service worker `public/sw.js`).
-- Prod : https://yallah-chi.vercel.app. Repo : github.com/curlyray7/Yallah (privé). Chaque push sur `main` redéploie sur Vercel.
+- Prod : https://yallah-chi.vercel.app. Repo : github.com/curlyray7/Okane (privé, ex-Yallah). Chaque push sur `main` redéploie sur Vercel.
 
 ## Stack
 Next.js 16.4 (App Router), React 19.3, TypeScript strict, Tailwind CSS 4.3 (@tailwindcss/postcss).

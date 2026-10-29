@@ -6,6 +6,7 @@ import { persistStorage } from "@/lib/backup";
 import { Onboarding } from "./Onboarding";
 import { Shell } from "./Shell";
 import { ToastProvider } from "./ui";
+import { Backdrop } from "./Backdrop";
 
 export function App() {
   const data = useData();
@@ -16,6 +17,7 @@ export function App() {
   }, [hasData]);
   return (
     <ToastProvider>
+      {data !== undefined && <Backdrop variant={data === null ? "onboarding" : "app"} />}
       {data === undefined ? (
         <div className="grid min-h-[60vh] place-items-center text-ink-2">Chargement…</div>
       ) : data === null ? (

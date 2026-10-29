@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f6f5fb;
+  --bg: #f1edfb;
   --surface: #ffffff;
   --surface-2: #efedf7;
   --ink: #1a1330;
@@ -15,6 +15,10 @@
   --hero: #1e1442;
   --on-hero: #ffffff;
   --gauge-warn: #f59e0b;
+  --sakura-1: #fbd3e2;
+  --sakura-2: #f6a8c6;
+  --sakura-3: #ec77a6;
+  --sakura-4: #d94c86;
   --bubble: #ffffff;
   --on-bubble: #1a1330;
   --save: #0e7a55;
@@ -149,6 +153,112 @@ body::before {
 }
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+/* Fond animé « aura de combat » (composant Backdrop). Seuls transform et opacity bougent : fluide sur téléphone. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aura {
+  position: absolute;
+  width: 110vmax;
+  height: 110vmax;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 34%, transparent), transparent);
+  transition: background 0.8s ease;
+}
+.aura-a {
+  --c: var(--aura-tone, var(--pop));
+  top: -62vmax;
+  left: -46vmax;
+  animation: aura-a 20s ease-in-out infinite alternate;
+}
+.aura-b {
+  --c: var(--accent);
+  top: -56vmax;
+  right: -52vmax;
+  animation: aura-b 26s ease-in-out infinite alternate;
+}
+@keyframes aura-a {
+  to {
+    transform: translate(20vmax, 10vmax) scale(1.12);
+  }
+}
+@keyframes aura-b {
+  to {
+    transform: translate(-16vmax, 14vmax) scale(0.94);
+  }
+}
+.rays {
+  position: absolute;
+  left: 50%;
+  top: -70vmax;
+  width: 150vmax;
+  height: 150vmax;
+  margin-left: -75vmax;
+  background: repeating-conic-gradient(from 0deg, transparent 0deg 7deg, color-mix(in srgb, var(--accent) 8%, transparent) 7deg 8deg);
+  /* Les traits s’éteignent avant la zone des enveloppes pour ne pas gêner la lecture. */
+  mask-image: radial-gradient(circle, transparent 20%, #000 32%, transparent 52%);
+  animation: rays 120s linear infinite;
+}
+@keyframes rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Nuée de pétales de sakura portée par le vent (composant Backdrop). Trois couches qui s’additionnent :
+   .petal-fall traverse l’écran en diagonale (--drift), .petal-sway ondule, .petal-spin fait tourner et retourner le pétale
+   sur un axe propre à chacun. Les pétales du premier plan sont grands et flous, ceux du fond petits et pâles. */
+.petal-fall {
+  position: absolute;
+  top: -60px;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: petal-fall linear infinite;
+}
+@keyframes petal-fall {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--alpha, 1);
+  }
+  90% {
+    opacity: var(--alpha, 1);
+  }
+  100% {
+    transform: translate(var(--drift, 20vw), calc(100vh + 120px));
+    opacity: 0;
+  }
+}
+.petal-sway {
+  animation: petal-sway ease-in-out infinite alternate;
+}
+@keyframes petal-sway {
+  from {
+    transform: translateX(calc(var(--sway, 24px) * -1));
+  }
+  to {
+    transform: translateX(var(--sway, 24px));
+  }
+}
+.petal-spin {
+  animation: petal-spin linear infinite;
+}
+@keyframes petal-spin {
+  from {
+    transform: rotate(var(--tilt, 0deg)) rotate3d(var(--axis, 1, 0.4, 0), 0deg);
+  }
+  to {
+    transform: rotate(calc(var(--tilt, 0deg) + 220deg)) rotate3d(var(--axis, 1, 0.4, 0), 360deg);
+  }
+}
+.petal {
+  display: block;
 }
 /* Titres manga : Bangers est étroite, on l’espace un peu. */
 .font-manga {

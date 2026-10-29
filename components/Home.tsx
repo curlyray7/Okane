@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AppData } from "@/lib/types";
 import { colorFor, envelopeBudgets, envelopeCats, refundsByCategory, rolledOver, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
 import { eur, eur0, round2 } from "@/lib/format";
@@ -52,6 +52,15 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           : m.savingsDone > 0
             ? ["contente", "Épargne versée, yosh ! Continue comme ça."]
             : ["neutre", month === now ? "Tu tiens le rythme. Ganbatte !" : "Voilà où en était cette période."];
+
+  // Teinte d’alerte des pétales du fond : ambre si une enveloppe part vite, rouge si une enveloppe est vide ; rien si tout va bien.
+  const aura = month !== now ? "" : available < 0 || overCat ? "var(--over)" : fastCat ? "var(--gauge-warn)" : "";
+  useEffect(() => {
+    const root = document.documentElement.style;
+    if (aura) root.setProperty("--aura-tone", aura);
+    else root.removeProperty("--aura-tone");
+    return () => void root.removeProperty("--aura-tone");
+  }, [aura]);
 
   const toggleSavings = () => {
     updateData((d) => {

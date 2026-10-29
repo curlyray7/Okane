@@ -169,7 +169,8 @@ body::before {
   background: repeating-conic-gradient(from 0deg at 85% 15%, transparent 0deg 7deg, color-mix(in srgb, var(--pop) 14%, transparent) 7deg 9deg);
   mask-image: radial-gradient(circle at 85% 15%, transparent 12%, #000 70%);
 }
-/* Barre de vie d’une enveloppe, façon jauge de PV : parallélogramme encré, crans tous les 10 %, reflet en haut. */
+/* Barre de vie d’une enveloppe, façon jauge de PV de jeu de combat : parallélogramme encré, crans tous les 10 %, reflet en haut.
+   Elle se vide par la gauche, comme le temps qui avance : le repère « aujourd’hui » se lit comme sur une frise. */
 .life {
   position: relative;
   height: 16px;
@@ -180,9 +181,13 @@ body::before {
 }
 .life-fill {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0 0 0 auto;
   background: linear-gradient(to bottom, color-mix(in srgb, var(--life) 55%, #fff) 0 30%, var(--life) 30%);
   transition: width 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+/* Barre de progression (onboarding) : elle se remplit depuis la gauche. */
+.life-fill.from-left {
+  inset: 0 auto 0 0;
 }
 .life::after {
   content: "";

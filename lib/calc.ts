@@ -111,10 +111,12 @@ export function monthReview(d: AppData, key: string) {
   const purchases = sumBy(m.expenses, (e) => Math.max(0, e.amount));
   const refunds = round2(purchases - allSpent);
   const saved = savedInMonth(m);
-  // Les enveloppes cumulatives gardent leur reste : il n’est pas proposé en épargne bonus.
-  const leftover = sumBy(
-    envs.filter((c) => !c.rollover),
-    (c) => Math.max(0, budgets[c.id] - (spent[c.id] ?? 0)),
+  // Non-dépensé proposé en épargne bonus : les restes moins les dépassements (ils ont été payés avec cet argent).
+  // Les enveloppes cumulatives gardent leur reste, et leur dépassement se rattrape la période suivante : elles sont à part.
+  const plain = envs.filter((c) => !c.rollover);
+  const leftover = Math.max(
+    0,
+    round2(sumBy(plain, (c) => Math.max(0, budgets[c.id] - (spent[c.id] ?? 0))) - sumBy(plain, (c) => Math.max(0, (spent[c.id] ?? 0) - budgets[c.id]))),
   );
   const overruns = envs
     .filter((c) => (spent[c.id] ?? 0) > budgets[c.id] + 0.004)

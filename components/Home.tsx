@@ -39,15 +39,19 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const goals = goalProgress(data);
   const overCat = envs.find((c) => envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]).level === "over");
   const doneGoal = goals.find((g) => g.done);
+  const showPace = month === now && progress > 0 && progress < 1;
+  // Même règle que l’alerte « Ça part vite » sous chaque enveloppe, pour que la mascotte ne dise pas le contraire.
+  const fastCat = showPace ? envs.find((c) => budgets[c.id] > 0 && envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]).level !== "over" && envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]).ratio - progress > 0.15) : undefined;
   const [mood, line]: [Mood, string] =
     available < 0 || overCat
       ? ["inquiete", overCat ? `Aïe, « ${overCat.name} » est vide. Prends dans une autre enveloppe, ganbatte !` : "Aïe, tes enveloppes sont dans le rouge. On se reprend !"]
       : doneGoal
         ? ["victoire", `Sugoi ! Objectif « ${doneGoal.goal.name} » atteint.`]
-        : m.savingsDone > 0
-          ? ["contente", "Épargne versée, yosh ! Continue comme ça."]
-          : ["neutre", month === now ? "Tu tiens le rythme. Ganbatte !" : "Voilà où en était cette période."];
-  const showPace = month === now && progress > 0 && progress < 1;
+        : fastCat
+          ? ["neutre", `« ${fastCat.name} » part vite. Lève le pied quelques jours et ça passe !`]
+          : m.savingsDone > 0
+            ? ["contente", "Épargne versée, yosh ! Continue comme ça."]
+            : ["neutre", month === now ? "Tu tiens le rythme. Ganbatte !" : "Voilà où en était cette période."];
 
   const toggleSavings = () => {
     updateData((d) => {
@@ -115,7 +119,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
           {showPace && envs.length > 0 && (
             <p className="-mt-1 mb-4 flex items-center gap-2 text-[0.8rem] text-ink-2">
               <span className="inline-block h-3.5 w-[3px] flex-none rounded-full bg-ink" aria-hidden="true" />
-              Aujourd’hui : la barre devrait rester au-delà de ce trait.
+              Aujourd’hui. Si la partie vide dépasse ce trait, tu dépenses trop vite.
             </p>
           )}
           <ul className="grid gap-6">
@@ -145,7 +149,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
                     </span>
                   </div>
                   <div className="mt-2 px-1">
-                    <LifeBar left={st.left} total={budgets[c.id]} state={state} marker={pace ? 1 - progress : undefined} />
+                    <LifeBar left={st.left} total={budgets[c.id]} state={state} marker={pace ? progress : undefined} />
                   </div>
                   <p className="mt-1.5 text-[0.8rem] text-ink-2">
                     {eur(Math.max(0, s))} dépensés sur {eur(budgets[c.id])}

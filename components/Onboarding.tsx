@@ -36,6 +36,9 @@ export function Onboarding() {
     const errs = validateDraft(draft);
     setErrors(errs);
     if (errs.length) return;
+    // Le budget créé, on arrive sur l’accueil (l’adresse pouvait garder #reglages après un effacement).
+    history.replaceState(null, "", "#accueil");
+    window.scrollTo({ top: 0 });
     setData({
       version: 1,
       createdAt: new Date().toISOString(),
@@ -58,7 +61,7 @@ export function Onboarding() {
             </span>
           </div>
           <div className="px-1">
-            <LifeBar left={idx} total={STEPS.length - 1} state="ok" />
+            <LifeBar left={idx} total={STEPS.length - 1} state="ok" fromLeft />
           </div>
         </div>
       )}

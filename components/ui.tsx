@@ -60,18 +60,34 @@ export function Panel({
 
 export type LifeState = "ok" | "fast" | "empty";
 
-/** Barre de vie : pleine en début de période, elle se vide à mesure qu’on dépense. `marker` = part qui devrait encore rester aujourd’hui. */
-export function LifeBar({ left, total, state, marker }: { left: number; total: number; state: LifeState; marker?: number }) {
+/**
+ * Barre de vie : pleine en début de période, elle se vide par la gauche à mesure qu’on dépense.
+ * `marker` = part de la période écoulée : si la partie vide dépasse ce trait, on dépense plus vite que le temps passe.
+ */
+export function LifeBar({
+  left,
+  total,
+  state,
+  marker,
+  fromLeft = false,
+}: {
+  left: number;
+  total: number;
+  state: LifeState;
+  marker?: number;
+  /** Se remplit depuis la gauche (barre de progression) au lieu de se vider par la gauche. */
+  fromLeft?: boolean;
+}) {
   const ratio = total > 0 ? Math.max(0, Math.min(1, left / total)) : 0;
   const color = state === "empty" ? "var(--over)" : state === "fast" ? "var(--gauge-warn)" : "var(--pop)";
   return (
     <div className={`life ${state === "empty" ? "!bg-over-soft" : ""}`} style={{ ["--life" as string]: color }}>
-      <div className="life-fill" style={{ width: `${ratio * 100}%` }} />
+      <div className={`life-fill ${fromLeft ? "from-left" : ""}`} style={{ width: `${ratio * 100}%` }} />
       {marker !== undefined && marker > 0 && marker < 1 && (
         <div
-          className="absolute -top-[5px] -bottom-[5px] z-[1] w-[3px] rounded-full bg-ink"
+          className="absolute -top-[4px] -bottom-[4px] z-[1] w-[3px] rounded-full bg-ink ring-2 ring-bg"
           style={{ left: `calc(${marker * 100}% - 1.5px)` }}
-          title="Aujourd’hui : la barre devrait encore être au moins jusqu’ici"
+          title="Aujourd’hui : la partie vide ne devrait pas dépasser ce trait"
           aria-hidden="true"
         />
       )}

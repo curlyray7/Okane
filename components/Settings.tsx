@@ -70,7 +70,9 @@ export function Settings({ data }: { data: AppData }) {
   };
 
   const wipe = () => {
-    if (window.confirm("Effacer définitivement ton budget et toutes tes dépenses sur cet appareil ?")) setData(null);
+    if (!window.confirm("Effacer définitivement ton budget et toutes tes dépenses sur cet appareil ?")) return;
+    history.replaceState(null, "", window.location.pathname);
+    setData(null);
   };
 
   return (

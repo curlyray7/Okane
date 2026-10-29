@@ -7,6 +7,7 @@ import { currentPeriod, inPeriod, ofPeriod, paydayOf, periodProgress } from "@/l
 import { updateData } from "@/lib/store";
 import { Alert, Button, Panel, useToast } from "./ui";
 import { MascotSays } from "./Mascot";
+import { mascotMood } from "@/lib/mood";
 
 export function Review({ data, month }: { data: AppData; month: string }) {
   const toast = useToast();
@@ -25,6 +26,20 @@ export function Review({ data, month }: { data: AppData; month: string }) {
       d.months[month] = cur;
     });
 
+  const pastMood = mascotMood({
+    when: "past",
+    envelopes: envelopeCats(data).map((c) => ({
+      name: c.name,
+      budget: r.budgets[c.id],
+      left: r.budgets[c.id] - (r.spent[c.id] ?? 0),
+      ratio: r.budgets[c.id] > 0 ? (r.spent[c.id] ?? 0) / r.budgets[c.id] : 0,
+    })),
+    available: r.envBudget - r.envSpent,
+    progress: 1,
+    daysLeft: 0,
+    savingsDone: m.savingsDone > 0,
+  });
+
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 min-[860px]:grid-cols-[1.1fr_.9fr] min-[860px]:gap-10">
       <div className="grid gap-8">
@@ -39,6 +54,9 @@ export function Review({ data, month }: { data: AppData; month: string }) {
               </>
             )}
           </MascotSays>
+        ) : past ? (
+          // Période terminée dans le rouge : la mascotte réagit selon la gravité (même règle que l’accueil).
+          <MascotSays mood={pastMood.mood}>{pastMood.line}</MascotSays>
         ) : r.overruns.length === 0 ? (
           <Alert tone="ok">Aucune enveloppe dépassée {month === now ? "pour l’instant" : inPeriod(month, payday)}. Yosh !</Alert>
         ) : (
@@ -53,7 +71,7 @@ export function Review({ data, month }: { data: AppData; month: string }) {
         <Panel title={`Bilan ${ofPeriod(month, payday)}`}>
           {/* Le chiffre qui compte en premier, en grand : ce qui reste sur le compte. */}
           <p className="text-[0.85rem] text-ink-2">Reste sur le compte courant</p>
-          <p className={`mb-4 text-[1.75rem] leading-tight font-bold tabular ${r.balance < 0 ? "text-over" : "text-save"}`}>{eur(r.balance)}</p>
+          <p className={`mb-4 text-[1.75rem] leading-tight font-bold tabular ${r.balance < 0 ? "text-over" : "text-save"}`}>{r.balance < 0 ? `− ${eur(-r.balance)}` : eur(r.balance)}</p>
           <Row label="Revenus prévus" value={eur(r.income)} />
           {r.extra > 0 && <Row label="Rentrées en plus" value={`+ ${eur(r.extra)}`} />}
           <Row label="Charges fixes" value={`− ${eur(r.fixed)}`} />

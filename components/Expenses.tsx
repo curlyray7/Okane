@@ -5,6 +5,7 @@ import { categoryName, colorFor, getMonth, sumBy } from "@/lib/calc";
 import { dayLabel, eur } from "@/lib/format";
 import { inPeriod, paydayOf } from "@/lib/period";
 import { Button } from "./ui";
+import { MascotSays } from "./Mascot";
 
 interface Line {
   id: string;
@@ -32,9 +33,11 @@ export function Expenses({ data, month, onEdit, onAdd, onImport }: { data: AppDa
 
   if (list.length === 0)
     return (
-      <div className="mx-auto max-w-[640px] py-10 text-center">
-        <p className="text-[1.05rem] font-semibold">Aucune opération {inPeriod(month, paydayOf(data))}</p>
-        <p className="mt-1 text-[0.9rem] text-ink-2">Note une dépense avec le bouton +, ou importe ton relevé de compte.</p>
+      <div className="mx-auto max-w-[640px] py-8 text-center">
+        <p className="mb-4 text-[1.05rem] font-semibold">Aucune opération {inPeriod(month, paydayOf(data))}</p>
+        <div className="text-left">
+          <MascotSays mood="explique">Note une dépense avec le bouton +, ou importe ton relevé de compte : je range tout dans tes enveloppes.</MascotSays>
+        </div>
         <div className="mt-5 flex flex-wrap justify-center gap-2.5">
           <Button variant="accent" onClick={onAdd}>
             Ajouter une dépense

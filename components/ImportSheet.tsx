@@ -151,7 +151,7 @@ export function ImportSheet({ data, onClose }: { data: AppData; onClose: () => v
 
         {!rows ? (
           <div className="overflow-auto px-[18px] pb-[18px]">
-            <MascotSays mood="neutre">Donne-moi ton relevé de compte, je range les dépenses dans tes enveloppes. Yosh !</MascotSays>
+            <MascotSays mood="explique">Donne-moi ton relevé de compte, je range les dépenses dans tes enveloppes. Yosh !</MascotSays>
             <label
               className="mt-4 grid cursor-pointer place-items-center gap-2 rounded-2xl border-2 border-dashed border-accent bg-accent-soft px-4 py-8 text-center"
               onDragOver={(e) => e.preventDefault()}

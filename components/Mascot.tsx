@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export type Mood = "neutre" | "contente" | "inquiete" | "victoire" | "fierte";
+export type Mood = "neutre" | "contente" | "pensif" | "explique" | "inquiete" | "choquee" | "victoire" | "fierte";
 
 /** Mascotte : dessins dans public/mascotte/<mood>.png, avec un visage SVG de secours tant qu’ils manquent. */
 /** `framed` : dans un médaillon rond, pour que la tenue sombre se détache aussi en thème sombre. */
@@ -54,7 +54,13 @@ function Fallback({ mood }: { mood: Mood }) {
           <ellipse cx="61" cy="56" rx="5" ry="6.5" fill="var(--ink)" />
           <circle cx="40.5" cy="54" r="1.8" fill="var(--on-hero)" />
           <circle cx="62.5" cy="54" r="1.8" fill="var(--on-hero)" />
-          {mood === "inquiete" ? (
+          {mood === "choquee" ? (
+            // Bouche grande ouverte et goutte de sueur : plus fort que « inquiète ».
+            <>
+              <ellipse cx="50" cy="72" rx="6" ry="7.5" fill="var(--ink)" />
+              <path d="M80 30 q6 10 0 14 q-6 -4 0 -14 z" fill="var(--pop)" stroke="var(--ink)" strokeWidth="2" />
+            </>
+          ) : mood === "inquiete" ? (
             <>
               <path d="M41 72 q9 -6 18 0" fill="none" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
               <path d="M80 30 q6 10 0 14 q-6 -4 0 -14 z" fill="var(--pop)" stroke="var(--ink)" strokeWidth="2" />

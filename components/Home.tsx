@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { AppData } from "@/lib/types";
-import { colorFor, envelopeBudgets, envelopeCats, refundsByCategory, rolledOver, envelopeStatus, fixedCats, getMonth, goalProgress, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
-import { eur, eur0, round2 } from "@/lib/format";
+import { colorFor, envelopeBudgets, envelopeCats, refundsByCategory, rolledOver, envelopeStatus, fixedCats, getMonth, goalProgress, monthReview, spentByCategory, sumBy, toAllocate, totalSaved } from "@/lib/calc";
+import { addMonths, eur, eur0, isoDate, round2 } from "@/lib/format";
 import { currentPeriod, ofPeriod, paydayOf, periodEndLabel, periodProgress } from "@/lib/period";
 import { updateData } from "@/lib/store";
 import { AllocateAlert } from "./Onboarding";
 import { Bar, Button, LifeBar, Panel, useToast, type LifeState } from "./ui";
-import { Mascot, type Mood } from "./Mascot";
+import { Mascot } from "./Mascot";
+import { mascotMood } from "@/lib/mood";
 import { SafetyTip } from "./SafetyTip";
 import { MoveSheet } from "./MoveSheet";
 
@@ -37,24 +38,32 @@ export function Home({ data, month }: { data: AppData; month: string }) {
   const m = getMonth(data, month);
   const rest = toAllocate(data);
   const goals = goalProgress(data);
-  const overCat = envs.find((c) => envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]).level === "over");
   const doneGoal = goals.find((g) => g.done);
   const showPace = month === now && progress > 0 && progress < 1;
-  // Même règle que l’alerte « Ça part vite » sous chaque enveloppe, pour que la mascotte ne dise pas le contraire.
-  const fastCat = showPace ? envs.find((c) => budgets[c.id] > 0 && envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]).level !== "over" && envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]).ratio - progress > 0.15) : undefined;
-  const [mood, line]: [Mood, string] =
-    available < 0 || overCat
-      ? ["inquiete", overCat ? `Aïe, « ${overCat.name} » est vide. Prends dans une autre enveloppe, ganbatte !` : "Aïe, tes enveloppes sont dans le rouge. On se reprend !"]
-      : doneGoal
-        ? ["victoire", `Sugoi ! Objectif « ${doneGoal.goal.name} » atteint.`]
-        : fastCat
-          ? ["neutre", `« ${fastCat.name} » part vite. Lève le pied quelques jours et ça passe !`]
-          : m.savingsDone > 0
-            ? ["contente", "Épargne versée, yosh ! Continue comme ça."]
-            : ["neutre", month === now ? "Tu tiens le rythme. Ganbatte !" : "Voilà où en était cette période."];
+  // Humeur et phrase de la mascotte : une seule règle (lib/mood.ts), la même que les alertes sous chaque enveloppe.
+  const { mood, line, alert } = mascotMood({
+    when: month < now ? "past" : month > now ? "future" : "current",
+    envelopes: envs.map((c) => {
+      const st = envelopeStatus(c, spent[c.id] ?? 0, budgets[c.id]);
+      return { name: c.name, budget: budgets[c.id], left: st.left, ratio: st.ratio };
+    }),
+    available,
+    progress,
+    day: month === now ? period.day : undefined,
+    total: period.total,
+    daysLeft,
+    endLabel: lastDay,
+    payday: payday > 1,
+    savingsDone: m.savingsDone > 0,
+    goalReached: doneGoal?.goal.name,
+    expenseCount: m.expenses.length + (m.extras?.length ?? 0),
+    rescued: month === now ? rescuedNames(data, month, budgets, spent) : [],
+    streak: month === now ? cleanStreak(data, now) : 0,
+    seed: isoDate(),
+  });
 
-  // Teinte d’alerte des pétales du fond : ambre si une enveloppe part vite, rouge si une enveloppe est vide ; rien si tout va bien.
-  const aura = month !== now ? "" : available < 0 || overCat ? "var(--over)" : fastCat ? "var(--gauge-warn)" : "";
+  // Teinte d’alerte des pétales du fond : rouge (dépassement, enveloppe vide), ambre (ça part vite) ; rien si tout va bien.
+  const aura = alert === "over" ? "var(--over)" : alert === "warn" ? "var(--gauge-warn)" : "";
   useEffect(() => {
     const root = document.documentElement.style;
     if (aura) root.setProperty("--aura-tone", aura);
@@ -81,7 +90,7 @@ export function Home({ data, month }: { data: AppData; month: string }) {
               <p
                 className={`mt-0.5 font-manga text-[clamp(2.9rem,13.5vw,4.6rem)] leading-[0.9] whitespace-nowrap tabular [text-shadow:3px_3px_0_var(--accent)] ${available < 0 ? "text-over" : ""}`}
               >
-                {eur(available)}
+                {available < 0 ? `− ${eur(-available)}` : eur(available)}
               </p>
               {perDay > 0 && (
                 <p className="mt-2 text-[0.9rem] leading-snug text-on-hero/85">
@@ -268,4 +277,22 @@ function QuickTip({ data, month }: { data: AppData; month: string }) {
       </Button>
     </Panel>
   );
+}
+
+/** Enveloppes qui ont reçu de l’argent par un déplacement dans les dernières 24 h et sont maintenant dans le vert. */
+function rescuedNames(data: AppData, month: string, budgets: Record<string, number>, spent: Record<string, number>) {
+  const recent = new Set((getMonth(data, month).moves ?? []).filter((mv) => Date.now() - mv.createdAt < 86400000).map((mv) => mv.to));
+  return envelopeCats(data)
+    .filter((c) => recent.has(c.id) && budgets[c.id] - (spent[c.id] ?? 0) >= 0)
+    .map((c) => c.name);
+}
+
+/** Périodes terminées d’affilée (juste avant la période en cours) sans aucune enveloppe dépassée. */
+function cleanStreak(data: AppData, now: string) {
+  let n = 0;
+  for (let k = addMonths(now, -1); k >= data.startMonth && n < 24; k = addMonths(k, -1)) {
+    if (monthReview(data, k).overruns.length > 0) break;
+    n++;
+  }
+  return n;
 }

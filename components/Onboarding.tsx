@@ -144,7 +144,7 @@ export function Onboarding() {
       )}
 
       {step === "recap" && (
-        <StepFrame title="Ton budget mensuel" hint="Vérifie, puis lance-toi. Tout reste modifiable dans les réglages.">
+        <StepFrame title="Ton budget mensuel" hint="Vérifie, puis lance-toi. Tout reste modifiable dans les réglages." plain>
           <div className="rounded-2xl bg-surface-2 px-4 py-3">
             <Line label="Revenus" value={totals.income} />
             <Line label="Charges fixes" value={-totals.fixed} />
@@ -230,11 +230,21 @@ function Hero() {
   );
 }
 
-function StepFrame({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+/** `plain` : consigne sans mascotte, quand l’étape a déjà la sienne (le récap). */
+function StepFrame({ title, hint, plain, children }: { title: string; hint: string; plain?: boolean; children: React.ReactNode }) {
   return (
     <div>
       <h1 className="font-manga text-[2.3rem] leading-none">{title}</h1>
-      <p className="mt-2 mb-6 text-ink-2">{hint}</p>
+      {plain ? (
+        <p className="mt-2 mb-6 text-ink-2">{hint}</p>
+      ) : (
+        // La mascotte donne la consigne de l’étape, en pointant vers sa bulle.
+        <div className="mt-3 mb-6">
+          <MascotSays mood="explique" size={72}>
+            {hint}
+          </MascotSays>
+        </div>
+      )}
       {children}
     </div>
   );

@@ -5,6 +5,7 @@ import type { AppData } from "@/lib/types";
 import { daysSince, downloadBackup, isIosBrowser } from "@/lib/backup";
 import { updateData } from "@/lib/store";
 import { Button, Panel, useToast } from "./ui";
+import { MascotSays } from "./Mascot";
 
 const HIDE_IOS = "okane:hide-ios-tip";
 
@@ -31,10 +32,10 @@ export function SafetyTip({ data }: { data: AppData }) {
   if (tip === "ios")
     return (
       <Panel title="Garde tes données" soft>
-        <p className="text-[0.93rem]">
+        <MascotSays mood="explique" size={72}>
           Sur iPhone, ajoute Okane à ton écran d’accueil : bouton <b>Partager</b>, puis <b>Sur l’écran d’accueil</b>. Sinon, Safari peut effacer
           ton budget après 7 jours sans l’ouvrir.
-        </p>
+        </MascotSays>
         <Button
           variant="ghost"
           className="mt-3"
@@ -55,10 +56,10 @@ export function SafetyTip({ data }: { data: AppData }) {
   if (tip === "backup")
     return (
       <Panel title="Petite sauvegarde ?" soft>
-        <p className="text-[0.93rem]">
+        <MascotSays mood="explique" size={72}>
           {data.lastBackupAt ? `Ta dernière sauvegarde date de ${daysSince(data.lastBackupAt)} jours.` : "Tu n’as encore jamais sauvegardé ton budget."} Un
           fichier sur ton téléphone suffit pour tout retrouver en cas de pépin.
-        </p>
+        </MascotSays>
         <Button
           variant="accent"
           className="mt-3"

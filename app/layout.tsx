@@ -5,7 +5,7 @@ import Script from "next/script";
 import { themeBootScript } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "Okane : ton budget, niveau boss",
+  title: "Okane : ton argent, ton plan",
   description:
     "Répartis ton salaire en enveloppes, suis tes dépenses et atteins tes objectifs d’épargne. Gratuit, sans compte, tes données restent sur ton appareil.",
   applicationName: "Okane",

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Okane : ton budget, niveau boss",
+    name: "Okane : ton argent, ton plan",
     short_name: "Okane",
     description: "Budget par enveloppes, sans compte, données sur ton appareil.",
     start_url: "/",

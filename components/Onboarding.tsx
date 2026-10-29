@@ -220,7 +220,7 @@ function Hero() {
     <div className="relative mt-10 mr-1">
       <div className="speed-lines overflow-hidden rounded-[6px] border-[3px] border-ink bg-hero px-5 pt-6 pb-6 text-on-hero shadow-ink">
         <h1 className="relative z-[1] max-w-[62%] font-manga text-[clamp(2.6rem,11vw,3.4rem)] leading-[0.92] [text-shadow:3px_3px_0_var(--accent)]">
-          Ton budget, niveau boss.
+          Ton argent, ton plan.
         </h1>
       </div>
       <div className="sticker pointer-events-none absolute -top-8 -right-2 z-[2]">
